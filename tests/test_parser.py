@@ -27,3 +27,6 @@ class TestParser(TestCase):
 
     def test_broken_link_new_line(self):
         self._run_and_assert('[link]\n(http://www.google.com)', 'ptt')
+
+    def test_special_chars(self):
+        self._run_and_assert('code d\\\'acti & vation', 'pt')

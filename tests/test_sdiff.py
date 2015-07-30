@@ -17,6 +17,12 @@ class TestFixturesSame(TestCase):
         _, _, errors = sdiff.diff(md1, md2)
         self.assertEqual([], errors)
 
+    def test_special_chars(self):
+        md1 = load_fixture('same/special_chars.en.md')
+        md2 = load_fixture('same/special_chars.de.md')
+        _, _, errors = sdiff.diff(md1, md2)
+        self.assertEqual([], errors)
+
 class TestFixturesDifferent(TestCase):
     def test_simple(self):
         md1 = load_fixture('different/extra_paragraph.en.md')

@@ -16,14 +16,12 @@ class InlineLexer(mistune.BlockLexer):
     def __init__(self):
         super().__init__()
         self.links = {}
-        self.grammar_class.text = re.compile(r'^[\s\S]+?(?=[\\<!\[`~]|https?://| {2,}\n|$)')
+        self.grammar_class.text = re.compile(r'^[\s\S]+?(?=[<!\[`~]|https?://| {2,}\n|$)')
 
     def parse_autolink(self, m):
-        print(m.group(0))
         self.tokens.append(LinkNode(m.group(0)))
 
     def parse_url(self, m):
-        print(m.group(0))
         self.tokens.append(LinkNode(m.group(0)))
 
     def parse_link(self, m):
