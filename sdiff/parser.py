@@ -149,18 +149,18 @@ class BlockLexer(mistune.BlockLexer):
             node.add_nodes(nodes)
             result.append(node)
         return result
-        
+
 
 def _remove_spaces_from_empty_lines(text):
     return '\n'.join([re.sub(r'^( {1,}|\t{1,})$', '\n', line) for line in text.splitlines()])
-    
-    
+
+
 def _remove_ltr_rtl_marks(text):
     return re.sub(r'(\u200e|\u200f)', '', text)
 
 
 def parse(text):
-    #HACK dirty hack to be consistent with Markdown list_block
+    # HACK dirty hack to be consistent with Markdown list_block
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
     block_lexer = BlockLexer()

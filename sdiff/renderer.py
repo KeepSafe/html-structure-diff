@@ -1,4 +1,5 @@
 class HtmlRenderer(object):
+
     def render(self, tree):
         result = ''
         for node in tree:
@@ -12,7 +13,9 @@ class HtmlRenderer(object):
             return '<del>%s</del>' % text
         return text
 
+
 class TextRenderer(object):
+
     def render(self, tree):
         result = ''
         for node in tree:

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from sdiff import compare
 from sdiff.parser import parse
 from sdiff.errors import ReplaceError, DeleteError, InsertError
-from pprint import pprint
+
 
 class TestEqual(TestCase):
     def test_single_header(self):

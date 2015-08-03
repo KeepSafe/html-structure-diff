@@ -41,20 +41,19 @@ class HeaderNode(Node):
     def __init__(self, level, nodes=None):
         super().__init__(nodes)
         self.level = level
-        
+
     def __str__(self):
         return '%s%s' % (self.level, ''.join(map(lambda i: str(i), self.nodes)))
 
     def __repr__(self):
         return repr({'type': self.__class__.__name__, 'style': self.style, 'level': self.level, 'nodes': self.nodes})
-        
+
     def original(self, renderer):
         result = '#' * self.level
         for node in self.nodes:
             result += node.original(renderer)
         result = result + '\n\n'
         return renderer.render_node(self, result)
-
 
 
 class ListNode(Node):

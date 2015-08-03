@@ -65,8 +65,6 @@ def _get_diff_codes(seq1, seq2):
 def compare(tree1, tree2):
     seq1 = flatten(tree1)
     seq2 = flatten(tree2)
-    print(tree1)
-    print(tree2)
     codes = _get_diff_codes(seq1, seq2)
     errors = _apply_codes(codes, tree1, tree2)
     return errors
