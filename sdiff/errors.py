@@ -7,7 +7,7 @@ class DiffError(object):
 class InsertError(DiffError):
 
     def __init__(self, node1, nodes2):
-        nodes2_msg = len([n.name for n in nodes2])
+        nodes2_msg = str([n.name for n in nodes2])
         node1_msg = node1.name
         self.message = 'There are missing elements %s. Please check the provided diffs.' % nodes2_msg
 
