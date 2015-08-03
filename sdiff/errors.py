@@ -1,4 +1,8 @@
-class InsertError(object):
+class DiffError(object):
+    def __str__(self):
+        return self.message
+
+class InsertError(DiffError):
 
     def __init__(self, node1, nodes2):
         nodes2_msg = str([n.name for n in nodes2])
@@ -6,14 +10,14 @@ class InsertError(object):
         self.message = 'There are missing elements %s which should be placed after %s element' % (nodes2_msg, node1_msg)
 
 
-class DeleteError(object):
+class DeleteError(DiffError):
 
     def __init__(self, nodes):
         nodes_msg = str([n.name for n in nodes])
         self.message = 'There are additional elements %s which should be removed' % nodes_msg
 
 
-class ReplaceError(object):
+class ReplaceError(DiffError):
 
     def __init__(self, nodes1, nodes2):
         nodes1_msg = str([n.name for n in nodes1])

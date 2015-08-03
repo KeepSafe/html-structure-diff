@@ -37,4 +37,4 @@ class TestFlatten(TestCase):
     def test_several_elements(self):
         tree = [ParagraphNode([TextNode('test'), LinkNode('link')]), HeaderNode(2, [TextNode('heading')])]
         actual = flatten(tree)
-        self.assertEqual('ptaht', actual)
+        self.assertEqual('ptt2t', actual)

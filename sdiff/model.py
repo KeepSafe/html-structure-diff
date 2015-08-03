@@ -34,16 +34,27 @@ class ParagraphNode(Node):
         return renderer.render_node(self, result)
 
 
-class HeaderNode(ParagraphNode):
+class HeaderNode(Node):
     symbol = 'h'
     name = 'header'
 
     def __init__(self, level, nodes=None):
         super().__init__(nodes)
         self.level = level
+        
+    def __str__(self):
+        return '%s%s' % (self.level, ''.join(map(lambda i: str(i), self.nodes)))
 
     def __repr__(self):
         return repr({'type': self.__class__.__name__, 'style': self.style, 'level': self.level, 'nodes': self.nodes})
+        
+    def original(self, renderer):
+        result = '#' * self.level
+        for node in self.nodes:
+            result += node.original(renderer)
+        result = result + '\n\n'
+        return renderer.render_node(self, result)
+
 
 
 class ListNode(Node):
@@ -102,7 +113,7 @@ class TextNode(Node):
 
 
 class LinkNode(Node):
-    symbol = 'a'
+    symbol = 't'
     name = 'link'
 
     def __init__(self, text):
@@ -139,4 +150,4 @@ class NewLineNode(Node):
         return repr({'type': self.__class__.__name__, 'style': self.style})
 
     def original(self, renderer):
-        return renderer.render_node(self, '  \n')
+        return renderer.render_node(self, u'  \u00B6\n')

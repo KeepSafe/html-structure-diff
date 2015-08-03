@@ -15,14 +15,14 @@ class TestTextRenderer(TestCase):
         self.assertEqual('test', actual)
 
     def test_header(self):
-        tree = [HeaderNode(2, [TextNode('##test')])]
+        tree = [HeaderNode(2, [TextNode('test')])]
         actual = self.renderer.render(tree)
         self.assertEqual('##test', actual)
 
     def test_several_elements(self):
         tree = [ParagraphNode([TextNode('test '), LinkNode('link')]), HeaderNode(2, [TextNode('heading')])]
         actual = self.renderer.render(tree)
-        self.assertEqual('test link\n\nheading', actual)
+        self.assertEqual('test link\n\n##heading', actual)
 
 class TestHtmlRenderer(TestCase):
     def setUp(self):
@@ -34,14 +34,14 @@ class TestHtmlRenderer(TestCase):
         self.assertEqual('<pre>\ntest\n</pre>', actual)
 
     def test_header(self):
-        tree = [HeaderNode(2, [TextNode('##test')])]
+        tree = [HeaderNode(2, [TextNode('test')])]
         actual = self.renderer.render(tree)
         self.assertEqual('<pre>\n##test\n</pre>', actual)
 
     def test_several_elements(self):
         tree = [ParagraphNode([TextNode('test '), LinkNode('link')]), HeaderNode(2, [TextNode('heading')])]
         actual = self.renderer.render(tree)
-        self.assertEqual('<pre>\ntest link\n\nheading\n</pre>', actual)
+        self.assertEqual('<pre>\ntest link\n\n##heading\n</pre>', actual)
 
     def test_ins_node(self):
         extra_text = TextNode('test')

@@ -23,6 +23,25 @@ class TestFixturesSame(TestCase):
         _, _, errors = sdiff.diff(md1, md2)
         self.assertEqual([], errors)
 
+    def test_long(self):
+        md1 = load_fixture('same/long.en.md')
+        md2 = load_fixture('same/long.fr.md')
+        _, _, errors = sdiff.diff(md1, md2)
+        self.assertEqual([], errors)
+
+    def test_ignore_one_tailing_space(self):
+        md1 = load_fixture('same/extra_end_space.en.md')
+        md2 = load_fixture('same/extra_end_space.de.md')
+        _, _, errors = sdiff.diff(md1, md2)
+        self.assertEqual([], errors)
+        
+    def test_ignore_only_spaces_text(self):
+        md1 = load_fixture('same/spaces_text.en.md')
+        md2 = load_fixture('same/spaces_text.fr.md')
+        _, _, errors = sdiff.diff(md1, md2)
+        self.assertEqual([], errors)
+    
+
 class TestFixturesDifferent(TestCase):
     def test_simple(self):
         md1 = load_fixture('different/extra_paragraph.en.md')

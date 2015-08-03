@@ -9,14 +9,14 @@ class InlineLexer(mistune.BlockLexer):
 
     default_rules = [
         'linebreak', 'link',
-        'reflink', 'nolink',
+        'reflink',
         'text',
     ]
 
     def __init__(self):
-        super().__init__()
         self.links = {}
-        self.grammar_class.text = re.compile(r'^[\s\S]+?(?=[<!\[`~]|https?://| {2,}\n|$)')
+        self.grammar_class.text = re.compile(r'^ {1,}\n|^[\s\S]+?(?=[\[`~]| {2,}\n|$)')
+        super().__init__()
 
     def parse_autolink(self, m):
         self.tokens.append(LinkNode(m.group(0)))
@@ -25,23 +25,17 @@ class InlineLexer(mistune.BlockLexer):
         self.tokens.append(LinkNode(m.group(0)))
 
     def parse_link(self, m):
-        return self._process_link(m, m.group(3), m.group(4))
+        return self._process_link(m)
 
     def parse_reflink(self, m):
-        key = mistune._keyify(m.group(2) or m.group(1))
-        if key not in self.links:
-            return None
-        ret = self.links[key]
-        return self._process_link(m, ret['link'], ret['title'])
+        # TODO skip this check for now
+        # key = mistune._keyify(m.group(2) or m.group(1))
+        # if key not in self.links:
+        #     return None
+        # ret = self.links[key]
+        return self._process_link(m)
 
-    def parse_nolink(self, m):
-        key = mistune._keyify(m.group(1))
-        if key not in self.links:
-            return None
-        ret = self.links[key]
-        return self._process_link(m, ret['link'], ret['title'])
-
-    def _process_link(self, m, link, title=None):
+    def _process_link(self, m):
         line = m.group(0)
         text = m.group(1)
         if line[0] == '!':
@@ -57,8 +51,10 @@ class InlineLexer(mistune.BlockLexer):
 
     def parse_text(self, m):
         text = m.group(0)
-        node = TextNode(text)
-        self.tokens.append(node)
+        if text.strip():
+            escaped_text = mistune.escape(text)
+            node = TextNode(escaped_text)
+            self.tokens.append(node)
 
 
 class BlockLexer(mistune.BlockLexer):
@@ -86,7 +82,7 @@ class BlockLexer(mistune.BlockLexer):
         level = len(m.group(1))
         text = m.group(0)
         node = HeaderNode(level)
-        node.add_nodes(self._parse_inline(text))
+        node.add_nodes(self._parse_inline(m.group(2)))
         self.tokens.append(node)
 
     def parse_lheading(self, m):
@@ -104,7 +100,8 @@ class BlockLexer(mistune.BlockLexer):
 
     def parse_text(self, m):
         text = m.group(0)
-        node = TextNode(text)
+        escaped_text = mistune.escape(text)
+        node = TextNode(escaped_text)
         self.tokens.append(node)
 
     def parse_list_block(self, m):
@@ -142,7 +139,7 @@ class BlockLexer(mistune.BlockLexer):
 
             rest = len(item)
             if i != length - 1 and rest:
-                _next = item[rest-1] == '\n'
+                _next = item[rest - 1] == '\n'
                 if not loose:
                     loose = _next
 
@@ -152,8 +149,19 @@ class BlockLexer(mistune.BlockLexer):
             node.add_nodes(nodes)
             result.append(node)
         return result
+        
+
+def _remove_spaces_from_empty_lines(text):
+    return '\n'.join([re.sub(r'^( {1,}|\t{1,})$', '\n', line) for line in text.splitlines()])
+    
+    
+def _remove_ltr_rtl_marks(text):
+    return re.sub(r'(\u200e|\u200f)', '', text)
 
 
 def parse(text):
+    #HACK dirty hack to be consistent with Markdown list_block
+    text = _remove_spaces_from_empty_lines(text)
+    text = _remove_ltr_rtl_marks(text)
     block_lexer = BlockLexer()
     return block_lexer.parse(text)
