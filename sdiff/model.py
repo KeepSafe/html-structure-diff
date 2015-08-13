@@ -133,6 +133,17 @@ class Text(Node):
 
     def __repr__(self):
         return repr({'type': self.name, 'meta': self.meta, 'text': self.text})
+        
+    # def __hash__(self):
+    #     return hash(self.symbol)
+    #     
+    # def __eq__(self, other):
+    #     if not isinstance(other, Text):
+    #         return False
+    #     wc = len(self.text.split(' '))
+    #     wc1 = len(other.text.split(' '))
+    #     print(wc, wc1, self.text, other.text)
+    #     return 2 > wc / wc1 > 0.5
 
     def original(self, renderer):
         return renderer.render_node(self, self.text)

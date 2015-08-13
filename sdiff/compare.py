@@ -51,4 +51,6 @@ def diff_links(tree1, tree2):
 
 
 def diff_struct(tree1, tree2):
+    print(tree1.print_all())
+    print(tree2.print_all())
     return _diff(tree1, tree2, exclude_symbols=['a', 'i'])

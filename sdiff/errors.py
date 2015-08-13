@@ -8,11 +8,11 @@ class InsertError(DiffError):
 
     def __init__(self, node):
         self.node = node
-        self.message = 'There is a missing element %s. Please check the provided diff.' % node.name
+        self.message = 'There is a missing element `%s`.' % node.name
 
 
 class DeleteError(DiffError):
 
     def __init__(self, node):
         self.node = node
-        self.message = 'There is an additional element %s. Please check the provided diff.' % node.name
+        self.message = 'There is an additional element `%s`.' % node.name
