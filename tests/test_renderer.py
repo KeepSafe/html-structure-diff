@@ -4,24 +4,22 @@ from unittest.mock import MagicMock, patch
 from sdiff.parser import parse
 from sdiff.renderer import TextRenderer, HtmlRenderer
 from sdiff.model import *
+from .fixtures import trees
 
 class TestTextRenderer(TestCase):
     def setUp(self):
         self.renderer = TextRenderer()
 
     def test_paragraph(self):
-        tree = Root([Paragraph([Text('test')])])
-        actual = self.renderer.render(tree)
-        self.assertEqual('test', actual)
+        actual = self.renderer.render(trees.pt())
+        self.assertEqual('dummy text', actual)
 
     def test_header(self):
-        tree = Root([Header(2, [Text('test')])])
-        actual = self.renderer.render(tree)
-        self.assertEqual('##test', actual)
+        actual = self.renderer.render(trees.r2t())
+        self.assertEqual('##dummy text', actual)
 
     def test_several_elements(self):
-        tree = Root([Paragraph([Text('test '), Link('link')]), Header(2, [Text('heading')])])
-        actual = self.renderer.render(tree)
+        actual = self.renderer.render(trees.pta2t())
         self.assertEqual('test link\n\n##heading', actual)
 
 class TestHtmlRenderer(TestCase):
@@ -29,30 +27,33 @@ class TestHtmlRenderer(TestCase):
         self.renderer = HtmlRenderer()
 
     def test_paragraph(self):
-        tree = Root([Paragraph([Text('test')])])
-        actual = self.renderer.render(tree)
-        self.assertEqual('<pre>\ntest\n</pre>', actual)
+        actual = self.renderer.render(trees.pt())
+        self.assertEqual('<pre>\ndummy text\n</pre>', actual)
 
     def test_header(self):
-        tree = Root([Header(2, [Text('test')])])
-        actual = self.renderer.render(tree)
-        self.assertEqual('<pre>\n##test\n</pre>', actual)
+        actual = self.renderer.render(trees.r2t())
+        self.assertEqual('<pre>\n##dummy text\n</pre>', actual)
 
     def test_several_elements(self):
-        tree = Root([Paragraph([Text('test '), Link('link')]), Header(2, [Text('heading')])])
-        actual = self.renderer.render(tree)
+        actual = self.renderer.render(trees.pta2t())
         self.assertEqual('<pre>\ntest link\n\n##heading\n</pre>', actual)
 
     def test_ins_node(self):
-        extra_text = Text('test')
+        extra_text = Text('extra')
         extra_text.meta['style'] = 'ins'
-        tree = Root([Paragraph([Text('test'), extra_text])])
+        tree = trees.pt()
+        tree.nodes[0].add_node(extra_text)
+
         actual = self.renderer.render(tree)
-        self.assertEqual('<pre>\ntest<ins>test</ins>\n</pre>', actual)
+
+        self.assertEqual('<pre>\ndummy text<ins>extra</ins>\n</pre>', actual)
 
     def test_ins_node(self):
-        extra_text = Text('test')
+        extra_text = Text('extra')
         extra_text.meta['style'] = 'del'
-        tree = Root([Paragraph([Text('test'), extra_text])])
+        tree = trees.pt()
+        tree.nodes[0].add_node(extra_text)
+
         actual = self.renderer.render(tree)
-        self.assertEqual('<pre>\ntest<del>test</del>\n</pre>', actual)
+
+        self.assertEqual('<pre>\ndummy text<del>extra</del>\n</pre>', actual)

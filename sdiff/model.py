@@ -138,9 +138,19 @@ class Text(Node):
         return renderer.render_node(self, self.text)
 
 
-class Link(Text):
+class Link(Node):
     symbol = 'a'
     name = 'link'
+
+    def __init__(self, text):
+        super().__init__()
+        self.text = text
+
+    def __repr__(self):
+        return repr({'type': self.name, 'meta': self.meta, 'text': self.text})
+
+    def original(self, renderer):
+        return renderer.render_node(self, self.text)
 
 
 class Image(Link):
