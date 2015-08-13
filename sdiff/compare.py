@@ -23,7 +23,6 @@ def _apply_diff_ranges(codes, seq1, seq2):
         for code in codes:
             if code[1] <= idx < code[2]:
                 node = item[0]
-                # print(node)
                 # HACK ignore single space errors
                 if not (isinstance(node, Text) and node.text == ' '):
                     node.meta['style'] = 'del'
@@ -51,6 +50,4 @@ def diff_links(tree1, tree2):
 
 
 def diff_struct(tree1, tree2):
-    print(tree1.print_all())
-    print(tree2.print_all())
     return _diff(tree1, tree2, exclude_symbols=['a', 'i'])
