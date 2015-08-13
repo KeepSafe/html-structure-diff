@@ -9,8 +9,7 @@ class InlineLexer(mistune.BlockLexer):
 
     default_rules = [
         'linebreak', 'link',
-        'reflink',
-        'text',
+        'reflink', 'text',
     ]
 
     def __init__(self):
@@ -19,10 +18,10 @@ class InlineLexer(mistune.BlockLexer):
         super().__init__()
 
     def parse_autolink(self, m):
-        self.tokens.append(LinkNode(m.group(0)))
+        self.tokens.append(Link(m.group(0)))
 
     def parse_url(self, m):
-        self.tokens.append(LinkNode(m.group(0)))
+        self.tokens.append(Link(m.group(0)))
 
     def parse_link(self, m):
         return self._process_link(m)
@@ -39,21 +38,21 @@ class InlineLexer(mistune.BlockLexer):
         line = m.group(0)
         text = m.group(1)
         if line[0] == '!':
-            node = ImageNode(line)
+            node = Image(line)
         else:
-            node = LinkNode(line)
+            node = Link(line)
 
         self.tokens.append(node)
 
     def parse_linebreak(self, m):
-        node = NewLineNode()
+        node = NewLine()
         self.tokens.append(node)
 
     def parse_text(self, m):
         text = m.group(0)
         if text.strip():
             escaped_text = mistune.escape(text)
-            node = TextNode(escaped_text)
+            node = Text(escaped_text)
             self.tokens.append(node)
 
 
@@ -76,39 +75,39 @@ class BlockLexer(mistune.BlockLexer):
     def parse_newline(self, m):
         length = len(m.group(0))
         if length > 1:
-            self.tokens.append(NewLineNode())
+            self.tokens.append(NewLine())
 
     def parse_heading(self, m):
         level = len(m.group(1))
         text = m.group(0)
-        node = HeaderNode(level)
+        node = Header(level)
         node.add_nodes(self._parse_inline(m.group(2)))
         self.tokens.append(node)
 
     def parse_lheading(self, m):
         level = 1 if m.group(2) == '=' else 2
         text = m.group(1)
-        node = HeaderNode(level)
+        node = Header(level)
         node.add_nodes(self._parse_inline(text))
         self.tokens.append(node)
 
     def parse_paragraph(self, m):
         text = m.group(1).rstrip('\n')
-        node = ParagraphNode()
+        node = Paragraph()
         node.add_nodes(self._parse_inline(text))
         self.tokens.append(node)
 
     def parse_text(self, m):
         text = m.group(0)
         escaped_text = mistune.escape(text)
-        node = TextNode(escaped_text)
+        node = Text(escaped_text)
         self.tokens.append(node)
 
     def parse_list_block(self, m):
         bull = m.group(2)
         cap = m.group(0)
         ordered = '.' in bull
-        node = ListNode(ordered)
+        node = List(ordered)
         node.add_nodes(self._process_list_item(cap, bull))
         self.tokens.append(node)
 
@@ -143,7 +142,7 @@ class BlockLexer(mistune.BlockLexer):
                 if not loose:
                     loose = _next
 
-            node = ListItemNode()
+            node = ListItem()
             block_lexer = BlockLexer()
             nodes = block_lexer.parse(item, self.list_rules)
             node.add_nodes(nodes)
@@ -164,4 +163,4 @@ def parse(text):
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
     block_lexer = BlockLexer()
-    return block_lexer.parse(text)
+    return Root(block_lexer.parse(text))

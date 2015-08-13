@@ -4,7 +4,21 @@ class Node(object):
 
     def __init__(self, nodes=None):
         self.nodes = nodes or []
-        self.style = ''
+        self.meta = {}
+
+    def __str__(self):
+        return self.symbol
+
+    def __repr__(self):
+        return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes})
+
+    def __hash__(self):
+        return hash(self.symbol)
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        return self.symbol == other.symbol
 
     def add_node(self, node):
         self.nodes.append(node)
@@ -12,19 +26,23 @@ class Node(object):
     def add_nodes(self, nodes):
         self.nodes.extend(nodes)
 
-    def __str__(self):
-        return '%s%s' % (self.symbol, ''.join(map(lambda i: str(i), self.nodes)))
+    def print_all(self):
+        return '%s%s' % (self.symbol, ''.join(map(lambda i: i.print_all(), self.nodes)))
 
 
-class ParagraphNode(Node):
+class Root(Node):
+    name = 'root'
+
+    def original(self, renderer):
+        result = ''
+        for node in self.nodes:
+            result += node.original(renderer)
+        return renderer.render_node(self, result)
+
+
+class Paragraph(Node):
     symbol = 'p'
     name = 'paragraph'
-
-    def __init__(self, nodes=None):
-        super().__init__(nodes)
-
-    def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'nodes': self.nodes})
 
     def original(self, renderer):
         result = ''
@@ -34,7 +52,7 @@ class ParagraphNode(Node):
         return renderer.render_node(self, result)
 
 
-class HeaderNode(Node):
+class Header(Node):
     symbol = 'h'
     name = 'header'
 
@@ -43,10 +61,20 @@ class HeaderNode(Node):
         self.level = level
 
     def __str__(self):
-        return '%s%s' % (self.level, ''.join(map(lambda i: str(i), self.nodes)))
+        return self.level
 
     def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'level': self.level, 'nodes': self.nodes})
+        data = super().__repr__()
+        data['level'] = self.level
+        return data
+
+    def __hash__(self):
+        return hash(self.level)
+
+    def __eq__(self, other):
+        if not isinstance(other, Header):
+            return False
+        return self.level == other.level
 
     def original(self, renderer):
         result = '#' * self.level
@@ -55,8 +83,11 @@ class HeaderNode(Node):
         result = result + '\n\n'
         return renderer.render_node(self, result)
 
+    def print_all(self):
+        return '%s%s' % (self.level, ''.join(map(lambda i: i.print_all(), self.nodes)))
 
-class ListNode(Node):
+
+class List(Node):
     symbol = 'l'
     name = 'list'
 
@@ -65,7 +96,9 @@ class ListNode(Node):
         self.ordered = ordered
 
     def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'ordered': self.ordered, 'nodes': self.nodes})
+        data = super().__repr__()
+        data['ordered'] = self.ordered
+        return data
 
     def original(self, renderer):
         result = ''
@@ -78,15 +111,9 @@ class ListNode(Node):
         return renderer.render_node(self, result)
 
 
-class ListItemNode(Node):
+class ListItem(Node):
     symbol = 'm'
     name = 'list-item'
-
-    def __init__(self, nodes=None):
-        super().__init__(nodes)
-
-    def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'nodes': self.nodes})
 
     def original(self, renderer):
         result = ''
@@ -96,7 +123,7 @@ class ListItemNode(Node):
         return result
 
 
-class TextNode(Node):
+class Text(Node):
     symbol = 't'
     name = 'text'
 
@@ -105,48 +132,28 @@ class TextNode(Node):
         self.text = text
 
     def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'text': self.text})
+        return repr({'type': self.name, 'meta': self.meta, 'text': self.text})
 
     def original(self, renderer):
         return renderer.render_node(self, self.text)
 
 
-class LinkNode(Node):
-    symbol = 't'
+class Link(Text):
+    symbol = 'a'
     name = 'link'
 
-    def __init__(self, text):
-        super().__init__()
-        self.text = text
 
-    def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'text': self.text})
-
-    def original(self, renderer):
-        return renderer.render_node(self, self.text)
-
-
-class ImageNode(Node):
+class Image(Link):
     symbol = 'i'
     name = 'image'
 
-    def __init__(self, text):
-        super().__init__()
-        self.text = text
 
-    def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style, 'text': self.text})
-
-    def original(self, renderer):
-        return renderer.render_node(self, self.text)
-
-
-class NewLineNode(Node):
+class NewLine(Node):
     symbol = 'n'
     name = 'new-line'
 
     def __repr__(self):
-        return repr({'type': self.__class__.__name__, 'style': self.style})
+        return repr({'type': self.name, 'meta': self.meta})
 
     def original(self, renderer):
         return renderer.render_node(self, u'  \u00B6\n')

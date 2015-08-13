@@ -1,70 +1,54 @@
+import re
+import logging
 from difflib import SequenceMatcher
-from .tree_utils import flatten, index_of
-from .errors import DeleteError, InsertError, ReplaceError
-from .model import TextNode
+from itertools import zip_longest
+
+from .parser import parse
+from .tree_utils import traverse
+from .errors import DeleteError, InsertError
+from .model import Text
+
+logger = logging.getLogger(__name__)
 
 
-def _apply_insert(code, tree1, tree2):
-    _, start_idx1, _, start_idx2, stop_idx2 = code
-    node1 = index_of(start_idx1 - 1, tree1) or index_of(start_idx1, tree1)
-    nodes2 = [index_of(idx, tree2) for idx in range(start_idx2, stop_idx2)]
-
-    # HACK ignore single space errors
-    if len(nodes2) == 1 and isinstance(nodes2[0], TextNode) and nodes2[0].text == ' ':
-        return
-
-    for node in nodes2:
-        node.style = 'ins'
-    return InsertError(node1, nodes2)
+def _diff_ranges(seq1, seq2):
+    opcodes = SequenceMatcher(a=seq1, b=seq2, autojunk=False).get_opcodes()
+    return list(filter(lambda i: i[0] != 'equal', opcodes))
 
 
-def _apply_delete(code, tree1, tree2):
-    _, start_idx1, stop_idx1, _, _ = code
-    nodes = [index_of(idx, tree1) for idx in range(start_idx1, stop_idx1)]
-
-    # HACK ignore single space errors
-    if len(nodes) == 1 and isinstance(nodes[0], TextNode) and nodes[0].text == ' ':
-        return
-
-    for node in nodes:
-        node.style = 'del'
-    return DeleteError(nodes)
-
-
-def _apply_replace(code, tree1, tree2):
-    _, start_idx1, stop_idx1, start_idx2, stop_idx2 = code
-    nodes1 = [index_of(idx, tree1) for idx in range(start_idx1, stop_idx1)]
-    nodes2 = [index_of(idx, tree2) for idx in range(start_idx2, stop_idx2)]
-    for node in nodes1:
-        node.style = 'del'
-    for node in nodes2:
-        node.style = 'ins'
-    return ReplaceError(nodes1, nodes2)
-
-
-def _apply_codes(codes, tree1, tree2):
+def _apply_diff_ranges(codes, seq1, seq2):
     errors = []
-    for code in codes:
-        action = code[0]
-        error = None
-        if action == 'insert':
-            error = _apply_insert(code, tree1, tree2)
-        elif action == 'delete':
-            error = _apply_delete(code, tree1, tree2)
-        elif action == 'replace':
-            error = _apply_replace(code, tree1, tree2)
-        if error:
-            errors.append(error)
+    seq = zip_longest(seq1, seq2)
+    for idx, item in enumerate(seq):
+        for code in codes:
+            if code[1] <= idx < code[2]:
+                node = item[0]
+                # print(node)
+                # HACK ignore single space errors
+                if not (isinstance(node, Text) and node.text == ' '):
+                    node.meta['style'] = 'del'
+                    errors.append(DeleteError(node))
+            if code[3] <= idx < code[4]:
+                node = item[1]
+                # HACK ignore single space errors
+                if not (isinstance(node, Text) and node.text == ' '):
+                    node.meta['style'] = 'ins'
+                    errors.append(InsertError(node))
     return errors
 
 
-def _get_diff_codes(seq1, seq2):
-    return SequenceMatcher(a=seq1, b=seq2, autojunk=False).get_opcodes()
+def _diff(tree1, tree2, include_symbols=None, exclude_symbols=None):
+    seq1 = list(traverse(tree1, include_symbols, exclude_symbols))
+    seq2 = list(traverse(tree2, include_symbols, exclude_symbols))
+    diff_ranges = _diff_ranges(seq1, seq2)
+    errors = _apply_diff_ranges(diff_ranges, seq1, seq2)
+
+    return tree1, tree2, errors
 
 
-def compare(tree1, tree2):
-    seq1 = flatten(tree1)
-    seq2 = flatten(tree2)
-    codes = _get_diff_codes(seq1, seq2)
-    errors = _apply_codes(codes, tree1, tree2)
-    return errors
+def diff_links(tree1, tree2):
+    return _diff(tree1, tree2, include_symbols=['p', 'h', 'l', 'a'])
+
+
+def diff_struct(tree1, tree2):
+    return _diff(tree1, tree2, exclude_symbols=['a', 'i'])

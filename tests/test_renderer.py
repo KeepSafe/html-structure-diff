@@ -10,17 +10,17 @@ class TestTextRenderer(TestCase):
         self.renderer = TextRenderer()
 
     def test_paragraph(self):
-        tree = [ParagraphNode([TextNode('test')])]
+        tree = Root([Paragraph([Text('test')])])
         actual = self.renderer.render(tree)
         self.assertEqual('test', actual)
 
     def test_header(self):
-        tree = [HeaderNode(2, [TextNode('test')])]
+        tree = Root([Header(2, [Text('test')])])
         actual = self.renderer.render(tree)
         self.assertEqual('##test', actual)
 
     def test_several_elements(self):
-        tree = [ParagraphNode([TextNode('test '), LinkNode('link')]), HeaderNode(2, [TextNode('heading')])]
+        tree = Root([Paragraph([Text('test '), Link('link')]), Header(2, [Text('heading')])])
         actual = self.renderer.render(tree)
         self.assertEqual('test link\n\n##heading', actual)
 
@@ -29,30 +29,30 @@ class TestHtmlRenderer(TestCase):
         self.renderer = HtmlRenderer()
 
     def test_paragraph(self):
-        tree = [ParagraphNode([TextNode('test')])]
+        tree = Root([Paragraph([Text('test')])])
         actual = self.renderer.render(tree)
         self.assertEqual('<pre>\ntest\n</pre>', actual)
 
     def test_header(self):
-        tree = [HeaderNode(2, [TextNode('test')])]
+        tree = Root([Header(2, [Text('test')])])
         actual = self.renderer.render(tree)
         self.assertEqual('<pre>\n##test\n</pre>', actual)
 
     def test_several_elements(self):
-        tree = [ParagraphNode([TextNode('test '), LinkNode('link')]), HeaderNode(2, [TextNode('heading')])]
+        tree = Root([Paragraph([Text('test '), Link('link')]), Header(2, [Text('heading')])])
         actual = self.renderer.render(tree)
         self.assertEqual('<pre>\ntest link\n\n##heading\n</pre>', actual)
 
     def test_ins_node(self):
-        extra_text = TextNode('test')
-        extra_text.style = 'ins'
-        tree = [ParagraphNode([TextNode('test'), extra_text])]
+        extra_text = Text('test')
+        extra_text.meta['style'] = 'ins'
+        tree = Root([Paragraph([Text('test'), extra_text])])
         actual = self.renderer.render(tree)
         self.assertEqual('<pre>\ntest<ins>test</ins>\n</pre>', actual)
 
     def test_ins_node(self):
-        extra_text = TextNode('test')
-        extra_text.style = 'del'
-        tree = [ParagraphNode([TextNode('test'), extra_text])]
+        extra_text = Text('test')
+        extra_text.meta['style'] = 'del'
+        tree = Root([Paragraph([Text('test'), extra_text])])
         actual = self.renderer.render(tree)
         self.assertEqual('<pre>\ntest<del>test</del>\n</pre>', actual)
