@@ -8,6 +8,7 @@ from .fixtures import trees
 
 
 class TestLinks(TestCase):
+
     def test_no_links(self):
         _, _, actual = diff_links(trees.pt(), trees.pt())
         self.assertEqual([], actual)
@@ -22,6 +23,7 @@ class TestLinks(TestCase):
 
 
 class TestEqual(TestCase):
+
     def test_single_header(self):
         _, _, errors = diff_struct(trees.r2t(), trees.r2t())
         self.assertEqual([], errors)
@@ -42,7 +44,9 @@ class TestEqual(TestCase):
         _, _, errors = diff_struct(trees.ptat(), trees.pt())
         self.assertEqual([], errors)
 
+
 class TestDifferent(TestCase):
+
     def test_no_header(self):
         _, _, errors = diff_struct(trees.r2t(), trees.pt())
         self.assertEqual('del', errors[0].node.meta['style'])

@@ -6,7 +6,9 @@ from sdiff.model import *
 
 import re
 
+
 class TestParser(TestCase):
+
     def _run_and_assert(self, data, expected):
         actual = parser.parse(data).print_all()
         self.assertEqual(expected, actual)
@@ -64,6 +66,7 @@ class TestParser(TestCase):
 
 
 class TestReplaceLines(TestCase):
+
     def test_single_empty_line(self):
         text = '  '
         actual = parser._remove_spaces_from_empty_lines(text)

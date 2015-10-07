@@ -1,6 +1,7 @@
 from collections import deque
 from .model import Text
 
+
 def _ignore_node(node, include_symbols, exclude_symbols):
     in_includes = not include_symbols or node.symbol in include_symbols
     in_excludes = exclude_symbols and node.symbol in exclude_symbols

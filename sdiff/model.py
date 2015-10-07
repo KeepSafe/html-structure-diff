@@ -133,10 +133,10 @@ class Text(Node):
 
     def __repr__(self):
         return repr({'type': self.name, 'meta': self.meta, 'text': self.text})
-        
+
     # def __hash__(self):
     #     return hash(self.symbol)
-    #     
+    #
     # def __eq__(self, other):
     #     if not isinstance(other, Text):
     #         return False

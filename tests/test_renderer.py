@@ -6,7 +6,9 @@ from sdiff.renderer import TextRenderer, HtmlRenderer
 from sdiff.model import *
 from .fixtures import trees
 
+
 class TestTextRenderer(TestCase):
+
     def setUp(self):
         self.renderer = TextRenderer()
 
@@ -22,7 +24,9 @@ class TestTextRenderer(TestCase):
         actual = self.renderer.render(trees.pta2t())
         self.assertEqual('test link\n\n##heading', actual)
 
+
 class TestHtmlRenderer(TestCase):
+
     def setUp(self):
         self.renderer = HtmlRenderer()
 
