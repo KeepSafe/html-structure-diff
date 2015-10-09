@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
-version = '0.1.4'
+version = '0.2.0'
 
 
 def read(f):
@@ -13,7 +13,7 @@ install_reqs = parse_requirements('requirements.txt', session=PipSession())
 reqs = [str(ir.req) for ir in install_reqs]
 
 
-setup(name='md-sdiff',
+setup(name='sdiff',
       version=version,
       description=('sdiff compares the structure of two markdown texts'),
       long_description='\n\n'.join((read('README.md'), read('CHANGELOG'))),
