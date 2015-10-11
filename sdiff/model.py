@@ -123,6 +123,18 @@ class ListItem(Node):
         return result
 
 
+class Html(Node):
+    symbol = 'm'
+    name = 'html'
+
+    def __init__(self, text):
+        super().__init__()
+        self.text = text
+
+    def original(self, renderer):
+        return renderer.render_node(self, self.text)
+
+
 class Text(Node):
     symbol = 't'
     name = 'text'

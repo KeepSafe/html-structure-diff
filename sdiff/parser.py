@@ -58,7 +58,7 @@ class InlineLexer(mistune.BlockLexer):
 
 class BlockLexer(mistune.BlockLexer):
     default_rules = [
-        'newline', 'list_block',
+        'newline', 'list_block', 'block_html',
         'heading', 'lheading',
         'paragraph', 'text',
     ]
@@ -90,6 +90,12 @@ class BlockLexer(mistune.BlockLexer):
         node = Header(level)
         node.add_nodes(self._parse_inline(text))
         self.tokens.append(node)
+
+    def parse_block_html(self, m):
+        text = m.group(0)
+        print(text)
+        html = Html(text)
+        self.tokens.append(html)
 
     def parse_paragraph(self, m):
         text = m.group(1).rstrip('\n')
