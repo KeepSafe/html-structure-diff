@@ -93,7 +93,6 @@ class BlockLexer(mistune.BlockLexer):
 
     def parse_block_html(self, m):
         text = m.group(0)
-        print(text)
         html = Html(text)
         self.tokens.append(html)
 

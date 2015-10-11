@@ -34,9 +34,3 @@ class TestSdiff(TestCase):
                 path1, path2 = case
                 _, _, errors = sdiff.diff(_load_fixture('different', path1), _load_fixture('different', path2))
                 self.assertNotEqual([], errors)
-
-    def test_html(self):
-        path1 = 'inline_html.en.md'
-        path2 = 'inline_html.de.md'
-        _, _, errors = sdiff.diff(_load_fixture('same', path1), _load_fixture('same', path2))
-        self.assertEqual([], errors)
