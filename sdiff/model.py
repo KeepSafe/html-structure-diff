@@ -7,7 +7,8 @@ class Node(object):
         self.meta = {}
 
     def __str__(self):
-        return self.symbol
+        s = self.symbol
+        return s + ''.join([str(n) for n in self.nodes])
 
     def __repr__(self):
         return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes})

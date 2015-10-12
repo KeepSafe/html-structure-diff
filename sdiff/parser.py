@@ -68,6 +68,16 @@ class BlockLexer(mistune.BlockLexer):
         'hrule', 'list_block', 'text',
     )
 
+    def __init__(self):
+        super().__init__()
+        self.grammar_class.block_html = re.compile(
+            r'^\s* *(?:%s|%s|%s) *(?:\n{1,}|\s*$)' % (
+                r'<!--[\s\S]*?-->',
+                r'<(%s)((?:%s)*?)>([\s\S]+?)<\/\1>' % (mistune._block_tag, mistune._valid_attr),
+                r'<%s(?:%s)*?>' % (mistune._block_tag, mistune._valid_attr),
+            )
+        )
+
     def _parse_inline(self, text):
         inline = InlineLexer()
         return inline.parse(text)
