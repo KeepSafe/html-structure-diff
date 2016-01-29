@@ -186,3 +186,5 @@ class NewLine(Node):
 
     def original(self, renderer):
         return renderer.render_node(self, u'  \u00B6\n')
+
+class JavaArgument(Node)
