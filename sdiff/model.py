@@ -62,12 +62,10 @@ class Header(Node):
         self.level = level
 
     def __str__(self):
-        return self.level
+        return str(self.level)
 
     def __repr__(self):
-        data = super().__repr__()
-        data['level'] = self.level
-        return data
+        return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'level': self.level})
 
     def __hash__(self):
         return hash(self.level)
@@ -97,9 +95,7 @@ class List(Node):
         self.ordered = ordered
 
     def __repr__(self):
-        data = super().__repr__()
-        data['ordered'] = self.ordered
-        return data
+        return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'ordered': self.ordered})
 
     def original(self, renderer):
         result = ''
