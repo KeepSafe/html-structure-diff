@@ -1,5 +1,21 @@
+from enum import Enum
+
+
+class Symbols(Enum):
+    null = ''
+    paragraph = 'p'
+    header = 'h'
+    list = 'l'
+    list_item = 'm'
+    html = 'x'
+    text = 't'
+    link = 'a'
+    image = 'i'
+    new_line = 'n'
+
+
 class Node(object):
-    symbol = ''
+    symbol = Symbols.null.value
     name = ''
 
     def __init__(self, nodes=None):
@@ -42,7 +58,7 @@ class Root(Node):
 
 
 class Paragraph(Node):
-    symbol = 'p'
+    symbol = Symbols.paragraph.value
     name = 'paragraph'
 
     def original(self, renderer):
@@ -54,7 +70,7 @@ class Paragraph(Node):
 
 
 class Header(Node):
-    symbol = 'h'
+    symbol = Symbols.header.value
     name = 'header'
 
     def __init__(self, level, nodes=None):
@@ -87,7 +103,7 @@ class Header(Node):
 
 
 class List(Node):
-    symbol = 'l'
+    symbol = Symbols.list.value
     name = 'list'
 
     def __init__(self, ordered, nodes=None):
@@ -109,7 +125,7 @@ class List(Node):
 
 
 class ListItem(Node):
-    symbol = 'm'
+    symbol = Symbols.list_item.value
     name = 'list-item'
 
     def original(self, renderer):
@@ -121,7 +137,7 @@ class ListItem(Node):
 
 
 class Html(Node):
-    symbol = 'm'
+    symbol = Symbols.html.value
     name = 'html'
 
     def __init__(self, text):
@@ -133,7 +149,7 @@ class Html(Node):
 
 
 class Text(Node):
-    symbol = 't'
+    symbol = Symbols.text.value
     name = 'text'
 
     def __init__(self, text):
@@ -158,7 +174,7 @@ class Text(Node):
 
 
 class Link(Node):
-    symbol = 'a'
+    symbol = Symbols.link.value
     name = 'link'
 
     def __init__(self, text):
@@ -173,12 +189,12 @@ class Link(Node):
 
 
 class Image(Link):
-    symbol = 'i'
+    symbol = Symbols.image.value
     name = 'image'
 
 
 class NewLine(Node):
-    symbol = 'n'
+    symbol = Symbols.new_line.value
     name = 'new-line'
 
     def __repr__(self):
@@ -186,5 +202,3 @@ class NewLine(Node):
 
     def original(self, renderer):
         return renderer.render_node(self, u'  \u00B6\n')
-
-class JavaArgument(Node)

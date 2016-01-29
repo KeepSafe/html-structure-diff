@@ -51,7 +51,7 @@ class TestParser(TestCase):
         self._run_and_assert('[link](url)\n ', 'pa')
 
     def test_space_new_line_saparated_as_single_text(self):
-        self._run_and_assert('<!-- TODO local on badges and iOS link --> \n<span id="appstore_badge">', 'mpt')
+        self._run_and_assert('<!-- TODO local on badges and iOS link --> \n<span id="appstore_badge">', 'xpt')
 
     def test_lheading_text(self):
         actual = parser.parse('heading\n=============')
