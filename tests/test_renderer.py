@@ -1,7 +1,5 @@
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
 
-from sdiff.parser import parse
 from sdiff.renderer import TextRenderer, HtmlRenderer
 from sdiff.model import *
 from .fixtures import trees
@@ -52,7 +50,7 @@ class TestHtmlRenderer(TestCase):
 
         self.assertEqual('<pre>\ndummy text<ins>extra</ins>\n</pre>', actual)
 
-    def test_ins_node(self):
+    def test_del_node(self):
         extra_text = Text('extra')
         extra_text.meta['style'] = 'del'
         tree = trees.pt()

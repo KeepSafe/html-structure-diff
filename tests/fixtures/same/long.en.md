@@ -1,18 +1,21 @@
-Hello,
 
-Welcome to KeepSafe! You just activated your personal KeepSafe account successfully. KeepSafe is the best place to store all your personal and important photos and videos. We make sure that no one gets to see your important photos by accident.
 
-Some ideas for what you could use KeepSafe for as well:
+<table class="wrapper" width="476" align="center" style="margin: 0 auto 25px auto;;" cellpadding="2" cellspacing="0">
+<tr style="background-color: #eee; font-weight: bold;">
+	<td class="holder" style="min-width:100px;">Devices</td>
+	<td class="holder" style="min-width:100px;">Status</td>
+</tr>
+{{#devices}}
+<tr>
+	<td class="text-01" style="min-width:100px;">{{name}}</td>
+	<td class="text-01" style="min-width:100px; color:#92d58d">synced</td>
+</tr>
+{{/devices}}
+</table>
+<sup>Is one of your devices not listed above? Open KeepSafe on the device you would like to see above, and make sure you have the latest version of KeepSafe installed on that device.</sup>
 
-* Keep important pictures of people who are close to you
-* Store a photo of your drivers license and other important cards you carry with you
-* Separate work and life
-* Keep your pictures of surprises and gifts for others
+-----------
 
-KeepSafe will store all your pictures securely and make sure that only you can access them and that they are not uploaded by accident to services where you don’t want to have them.
+Want to do even more with your KeepSafe? [Here are some tips and tricks for making the most out of your KeepSafe](http://www.getkeepsafe.com/features.html). 
 
-KeepSafe also allows you to view your pictures on multiple devices, like a tablet, at the same time.
-
-Have a look at our FAQ and our terms, in case you want to learn a little more on how certain things are done:
-[http://support.getkeepsafe.com]()  
-[Terms of Service](https://www.getkeepsafe.com/privacy.html#terms), [Privacy Policy](https://www.getkeepsafe.com/privacy.html)
+Questions? [Check out our knowledge base](http://support.getkeepsafe.com/hc/en-us/sections/200201364-FAQ).

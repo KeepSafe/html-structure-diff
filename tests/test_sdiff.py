@@ -1,10 +1,8 @@
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
 
 import os
 import sdiff
 from pathlib import Path
-from sdiff.errors import *
 
 
 def _load_fixture(*path):

@@ -1,10 +1,5 @@
-from unittest import TestCase, skip
-from unittest.mock import MagicMock, patch
-
-from sdiff import parser, tree_utils
-from sdiff.model import *
-
-import re
+from unittest import TestCase
+from sdiff import parser
 
 
 class TestParser(TestCase):

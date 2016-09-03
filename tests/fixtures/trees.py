@@ -1,7 +1,9 @@
 from sdiff.model import *
 
+
 def empty_tree():
     return Root()
+
 
 def pt():
     return Root([
@@ -10,6 +12,7 @@ def pt():
         ])
     ])
 
+
 def r2t():
     return Root([
         Header(2, [
@@ -17,12 +20,14 @@ def r2t():
         ])
     ])
 
+
 def r4t():
     return Root([
         Header(4, [
             Text('dummy text')
         ])
     ])
+
 
 def lm2tm2t():
     return Root([
@@ -40,12 +45,14 @@ def lm2tm2t():
         ])
     ])
 
+
 def pa():
     return Root([
         Paragraph([
             Link('dummy link')
         ])
     ])
+
 
 def paa():
     return Root([
@@ -54,6 +61,7 @@ def paa():
             Link('dummy link 2')
         ])
     ])
+
 
 def ptat():
     return Root([
@@ -64,6 +72,7 @@ def ptat():
         ])
     ])
 
+
 def ptnt():
     return Root([
         Paragraph([
@@ -72,6 +81,7 @@ def ptnt():
             Text('text')
         ])
     ])
+
 
 def pta2t():
     return Root([

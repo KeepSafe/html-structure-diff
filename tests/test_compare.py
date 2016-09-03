@@ -1,9 +1,6 @@
-from unittest import TestCase, skip
-from unittest.mock import MagicMock, patch
+from unittest import TestCase
 
 from sdiff.compare import diff_links, diff_struct
-from sdiff.parser import parse
-from sdiff.errors import DeleteError, InsertError
 from .fixtures import trees
 
 

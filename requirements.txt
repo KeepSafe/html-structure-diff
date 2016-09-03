@@ -1,2 +1,1 @@
 mistune==0.7
-nose>=1.3
