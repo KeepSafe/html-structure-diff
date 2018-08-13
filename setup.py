@@ -14,7 +14,7 @@ install_requires = [
 ]
 
 setup(name='sdiff',
-      version='0.2.2',
+      version=version,
       description=('sdiff compares the structure of two markdown texts'),
       long_description='\n\n'.join((read('README.md'), read('CHANGELOG'))),
       classifiers=[
