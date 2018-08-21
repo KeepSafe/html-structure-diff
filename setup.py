@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 
-version = '0.2.2'
+version = '0.3.0'
 
 
 def read(f):
@@ -28,5 +28,5 @@ setup(name='sdiff',
       packages=find_packages(exclude=['tests']),
       package_data={},
       namespace_packages=[],
-      install_requires = install_requires,
-      include_package_data = False)
+      install_requires=install_requires,
+      include_package_data=False)

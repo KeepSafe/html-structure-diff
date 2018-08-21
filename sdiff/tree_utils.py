@@ -19,5 +19,7 @@ def traverse(tree, include_symbols=None, exclude_symbols=None):
             continue
         yield node
         previous = node
-        children = reversed(list(filter(lambda i: _ignore_node(i, include_symbols, exclude_symbols), node.nodes)))
+
+        child_list = [i for i in node.nodes if _ignore_node(i, include_symbols, exclude_symbols)]
+        children = reversed(child_list)
         stack.extendleft(children)
