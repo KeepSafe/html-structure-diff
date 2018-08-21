@@ -36,7 +36,6 @@ class InlineLexer(mistune.BlockLexer):
 
     def _process_link(self, m):
         line = m.group(0)
-        text = m.group(1)
         if line[0] == '!':
             node = Image(line)
         else:
@@ -89,7 +88,6 @@ class BlockLexer(mistune.BlockLexer):
 
     def parse_heading(self, m):
         level = len(m.group(1))
-        text = m.group(0)
         node = Header(level)
         node.add_nodes(self._parse_inline(m.group(2)))
         self.tokens.append(node)
@@ -146,7 +144,7 @@ class BlockLexer(mistune.BlockLexer):
                 pattern = re.compile(r'^ {1,%d}' % space, flags=re.M)
                 item = pattern.sub('', item)
 
-            # determin whether item is loose or not
+            # determine whether item is loose or not
             loose = _next
             if not loose and re.search(r'\n\n(?!\s*$)', item):
                 loose = True

@@ -1,12 +1,10 @@
-import re
 import logging
 from difflib import SequenceMatcher
 from itertools import zip_longest
 
-from .parser import parse
-from .tree_utils import traverse
 from .errors import DeleteError, InsertError
 from .model import Text
+from .tree_utils import traverse
 
 logger = logging.getLogger(__name__)
 

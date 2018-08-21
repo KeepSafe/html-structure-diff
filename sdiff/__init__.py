@@ -1,6 +1,6 @@
 from .parser import parse
 from .renderer import TextRenderer
-from .compare import diff_struct, diff_links
+from .compare import diff_struct, diff_links  # noqa
 
 
 def diff(md1, md2, renderer=TextRenderer()):
