@@ -1,3 +1,5 @@
+from typing import Match, Type
+
 import mistune
 import re
 
@@ -66,6 +68,10 @@ class BlockLexer(mistune.BlockLexer):
         'newline', 'heading', 'lheading',
         'hrule', 'list_block', 'text',
     )
+
+    @classmethod
+    def get_lexer(cls):
+        return cls()
 
     def __init__(self):
         super().__init__()
@@ -156,11 +162,47 @@ class BlockLexer(mistune.BlockLexer):
                     loose = _next
 
             node = ListItem()
-            block_lexer = BlockLexer()
+            block_lexer = self.get_lexer()
             nodes = block_lexer.parse(item, self.list_rules)
             node.add_nodes(nodes)
             result.append(node)
         return result
+
+
+class KsBlockLexer(BlockLexer):
+    TAG_CONTENT_GROUP = 'tag_content'
+    TAG_PATTERN = r'^\s*(<{tag_name}{attr_re}>(?P<%s>[\s\S]+?)</{tag_name}>)\s*$' % TAG_CONTENT_GROUP
+    CALLOUT_STYLE_GROUP = 'style'
+    CALLOUT_ATTR_PATTERN = r'( (?P<%s>green|red|yellow))*' % CALLOUT_STYLE_GROUP
+
+    def __init__(self):
+        super().__init__()
+        self.grammar_class.callout = re.compile(self.TAG_PATTERN.format(tag_name='callout',
+                                                                        attr_re=self.CALLOUT_ATTR_PATTERN))
+        self.default_rules.insert(0, 'callout')
+
+        self.grammar_class.steps = re.compile(self.TAG_PATTERN.format(tag_name='steps', attr_re=''))
+        self.default_rules.insert(0, 'steps')
+
+        self.grammar_class.tabs = re.compile(self.TAG_PATTERN.format(tag_name='tabs', attr_re=''))
+        self.default_rules.insert(0, 'tabs')
+
+    def parse_callout(self, m: Match[str]) -> None:
+        style = m.group(self.CALLOUT_STYLE_GROUP)
+        self._parse_nested(KsCallout(style), m)
+
+    def parse_steps(self, m: Match[str]) -> None:
+        self._parse_nested(KsSteps(), m)
+
+    def parse_tabs(self, m: Match[str]) -> None:
+        self._parse_nested(KsTabs(), m)
+
+    def _parse_nested(self, node: Node, m: Match[str]) -> None:
+        nested_content = m.group(self.TAG_CONTENT_GROUP)
+        nested_nodes = self.get_lexer().parse(nested_content)
+        node.add_nodes(nested_nodes)
+        self.tokens.append(node)
+
 
 
 def _remove_spaces_from_empty_lines(text):
@@ -171,9 +213,9 @@ def _remove_ltr_rtl_marks(text):
     return re.sub(r'(\u200e|\u200f)', '', text)
 
 
-def parse(text):
+def parse(text, lexer_cls: Type[BlockLexer] = BlockLexer):
     # HACK dirty hack to be consistent with Markdown list_block
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
-    block_lexer = BlockLexer()
+    block_lexer = lexer_cls()
     return Root(block_lexer.parse(text))

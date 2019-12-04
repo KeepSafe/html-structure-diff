@@ -1,13 +1,21 @@
 from unittest import TestCase
-from sdiff import parser
+from sdiff import parser, BlockLexer, KsBlockLexer
 
 
-class TestParser(TestCase):
+class ParserTestCase(TestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.parser_cls = BlockLexer
 
-    def _run_and_assert(self, data, expected):
-        actual = parser.parse(data).print_all()
+    def _run_and_assert(self, data: str, expected: str):
+        actual = parser.parse(data, lexer_cls=self.parser_cls).print_all()
         self.assertEqual(expected, actual)
 
+    def _parse(self, data: str):
+        return parser.parse(data, lexer_cls=self.parser_cls)
+
+
+class TestParser(ParserTestCase):
     def test_empty(self):
         self._run_and_assert('', '')
 
@@ -36,7 +44,7 @@ class TestParser(TestCase):
         self._run_and_assert('Danke!', 'pt')
 
     def test_escape_html(self):
-        actual = parser.parse('<sub>text</sub>')
+        actual = self._parse('<sub>text</sub>')
         self.assertEqual('&lt;sub&gt;text&lt;/sub&gt;', actual.nodes[0].nodes[0].text)
 
     def test_ignore_single_space(self):
@@ -49,15 +57,85 @@ class TestParser(TestCase):
         self._run_and_assert('<!-- TODO local on badges and iOS link --> \n<span id="appstore_badge">', 'xpt')
 
     def test_lheading_text(self):
-        actual = parser.parse('heading\n=============')
+        actual = self._parse('heading\n=============')
         self.assertEqual('heading', actual.nodes[0].nodes[0].text)
 
     def test_heading_text(self):
-        actual = parser.parse('###heading')
+        actual = self._parse('### heading')
         self.assertEqual('heading', actual.nodes[0].nodes[0].text)
 
     def test_link_wrapped_in_text(self):
         self._run_and_assert('some text [link](url) new text', 'ptat')
+
+
+class TestZendeskParser(ParserTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.parser_cls = KsBlockLexer
+
+    def test_callout(self):
+        fixture = """
+        <callout>
+        # title
+        content
+        </callout>
+        """
+        self._run_and_assert(fixture, 'C1tpt')
+
+    def test_callout_style(self):
+        fixture = """
+        <callout green>
+        # title
+        content
+        </callout>
+        """
+        actual = self._parse(fixture)
+        self.assertEqual(actual.nodes[0].style, 'green')
+        import logging
+        logging.debug('%s', actual.nodes[0].nodes)
+        assert False
+
+    def test_callout_invalid_style(self):
+        fixture = """
+        <callout invalid>
+        # title
+        content
+        </callout>
+        """
+        actual = self._parse(fixture)
+        self.assertNotEqual(actual.nodes[0].name, 'callout')
+
+    def test_tabs(self):
+        fixture = """
+        <tabs>
+        # title 1
+        content 1
+        # title 2
+        content 2
+        </tabs>
+        """
+        self._run_and_assert(fixture, 'T1tpt1tpt')
+
+    def test_steps(self):
+        steps_fixture = """
+        <steps>
+        1. one
+        2. two
+        3. tri
+        </steps>
+        """
+        with self.subTest('happy path'):
+            self._run_and_assert(steps_fixture, 'Slmtmtmt')
+        with self.subTest('nested in tabs'):
+            fixture = """
+            <tabs>
+            # title 1
+            content 1
+            # title 2
+            %s
+            </tabs>
+            """ % steps_fixture
+            self._run_and_assert(fixture, 'T1tpt1tSlmtmtmt')
 
 
 class TestReplaceLines(TestCase):
