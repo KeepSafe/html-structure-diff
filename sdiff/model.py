@@ -16,7 +16,7 @@ class Symbols(Enum):
     new_line = 'n'
 
 
-class KsSymbols(Enum):
+class ZendeskArtSymbols(Enum):
     steps = 'S'
     tabs = 'T'
     callout = 'C'
@@ -156,36 +156,6 @@ class Html(Node):
         return renderer.render_node(self, self.text)
 
 
-class KsSteps(Node):
-    symbol = KsSymbols.steps.value
-    name = 'steps'
-
-
-class KsTabs(Node):
-    symbol = KsSymbols.tabs.value
-    name = 'tabs'
-
-
-class KsCallout(Node):
-    symbol = KsSymbols.callout.value
-    name = 'callout'
-
-    def __init__(self, style: str = None, nodes: typing.List[Node] = None):
-        super().__init__(nodes)
-        self.style = style
-
-    def __repr__(self):
-        return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'style': self.style})
-
-    def __hash__(self):
-        return hash((self.name, self.style))
-
-    def __eq__(self, other):
-        if not isinstance(other, KsCallout):
-            return False
-        return self.style == other.style
-
-
 class Text(Node):
     symbol = Symbols.text.value
     name = 'text'
@@ -240,3 +210,33 @@ class NewLine(Node):
 
     def original(self, renderer):
         return renderer.render_node(self, u'  \u00B6\n')
+
+
+class ZendeskArtSteps(Node):
+    symbol = ZendeskArtSymbols.steps.value
+    name = 'steps'
+
+
+class ZendeskArtTabs(Node):
+    symbol = ZendeskArtSymbols.tabs.value
+    name = 'tabs'
+
+
+class ZendeskArtCallout(Node):
+    symbol = ZendeskArtSymbols.callout.value
+    name = 'callout'
+
+    def __init__(self, style: str = None, nodes: typing.List[Node] = None):
+        super().__init__(nodes)
+        self.style = style
+
+    def __repr__(self):
+        return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'style': self.style})
+
+    def __hash__(self):
+        return hash((self.name, self.style))
+
+    def __eq__(self, other):
+        if not isinstance(other, ZendeskArtCallout):
+            return False
+        return self.style == other.style

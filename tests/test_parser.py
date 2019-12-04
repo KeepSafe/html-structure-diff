@@ -1,5 +1,5 @@
 from unittest import TestCase
-from sdiff import parser, BlockLexer, KsBlockLexer
+from sdiff import parser, BlockLexer, ZendeskArtBlockLexer
 
 
 class ParserTestCase(TestCase):
@@ -71,7 +71,7 @@ class TestParser(ParserTestCase):
 class TestZendeskParser(ParserTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.parser_cls = KsBlockLexer
+        self.parser_cls = ZendeskArtBlockLexer
 
     def test_callout(self):
         fixture = """
@@ -91,9 +91,6 @@ class TestZendeskParser(ParserTestCase):
         """
         actual = self._parse(fixture)
         self.assertEqual(actual.nodes[0].style, 'green')
-        import logging
-        logging.debug('%s', actual.nodes[0].nodes)
-        assert False
 
     def test_callout_invalid_style(self):
         fixture = """

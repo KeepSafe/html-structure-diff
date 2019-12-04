@@ -169,7 +169,7 @@ class BlockLexer(mistune.BlockLexer):
         return result
 
 
-class KsBlockLexer(BlockLexer):
+class ZendeskArtBlockLexer(BlockLexer):
     TAG_CONTENT_GROUP = 'tag_content'
     TAG_PATTERN = r'^\s*(<{tag_name}{attr_re}>(?P<%s>[\s\S]+?)</{tag_name}>)\s*$' % TAG_CONTENT_GROUP
     CALLOUT_STYLE_GROUP = 'style'
@@ -189,20 +189,19 @@ class KsBlockLexer(BlockLexer):
 
     def parse_callout(self, m: Match[str]) -> None:
         style = m.group(self.CALLOUT_STYLE_GROUP)
-        self._parse_nested(KsCallout(style), m)
+        self._parse_nested(ZendeskArtCallout(style), m)
 
     def parse_steps(self, m: Match[str]) -> None:
-        self._parse_nested(KsSteps(), m)
+        self._parse_nested(ZendeskArtSteps(), m)
 
     def parse_tabs(self, m: Match[str]) -> None:
-        self._parse_nested(KsTabs(), m)
+        self._parse_nested(ZendeskArtTabs(), m)
 
     def _parse_nested(self, node: Node, m: Match[str]) -> None:
         nested_content = m.group(self.TAG_CONTENT_GROUP)
         nested_nodes = self.get_lexer().parse(nested_content)
         node.add_nodes(nested_nodes)
         self.tokens.append(node)
-
 
 
 def _remove_spaces_from_empty_lines(text):

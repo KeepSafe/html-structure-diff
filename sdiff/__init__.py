@@ -1,6 +1,6 @@
 from typing import Type
 
-from .parser import parse, BlockLexer, KsBlockLexer
+from .parser import parse, BlockLexer, ZendeskArtBlockLexer
 from .renderer import TextRenderer
 from .compare import diff_struct, diff_links  # noqa
 
