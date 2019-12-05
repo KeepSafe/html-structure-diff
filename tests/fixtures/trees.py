@@ -93,3 +93,44 @@ def pta2t():
             Text('heading')
         ])
     ])
+
+
+def Slmtmt():  # noqa
+    return Root([
+        ZendeskArtSteps([
+            List(True, [
+                ListItem([
+                    Text('one')
+                ]),
+                ListItem([
+                    Text('two')
+                ])
+            ])
+        ])
+    ])
+
+
+def T1tpt():  # noqa
+    return Root([
+        ZendeskArtTabs([
+            Header(1, [
+                Text('tab title')
+            ]),
+            Paragraph([
+                Text('tab content')
+            ])
+        ])
+    ])
+
+
+def C1tpt(style=None):  # noqa
+    return Root([
+        ZendeskArtCallout(style, [
+            Header(1, [
+                Text('callout title')
+            ]),
+            Paragraph([
+                Text('callout content')
+            ])
+        ])
+    ])

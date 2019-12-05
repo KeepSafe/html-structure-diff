@@ -1,6 +1,11 @@
+from abc import ABC
 from enum import Enum
 
 import typing
+from typing import Union
+
+if typing.TYPE_CHECKING:
+    from sdiff.renderer import HtmlRenderer, TextRenderer
 
 
 class Symbols(Enum):
@@ -212,17 +217,35 @@ class NewLine(Node):
         return renderer.render_node(self, u'  \u00B6\n')
 
 
-class ZendeskArtSteps(Node):
+class ZendeskArtNode(Node, ABC):
+    def wrap(self, content: str) -> str:
+        return f'<{self.name}>\n\n{content}</{self.name}>\n'
+
+    def original(self, renderer: Union['HtmlRenderer', 'TextRenderer']) -> str:
+        nested_content = ''.join(node.original(renderer) for node in self.nodes)
+        result = self.wrap(nested_content)
+        return renderer.render_node(self, result)
+
+
+class ZendeskArtSteps(ZendeskArtNode):
     symbol = ZendeskArtSymbols.steps.value
     name = 'steps'
 
+    def wrap(self, content: str) -> str:
+        return f'<{self.name}>\n\n{content}</{self.name}>\n'
 
-class ZendeskArtTabs(Node):
+    def original(self, renderer: Union['HtmlRenderer', 'TextRenderer']) -> str:
+        nested_content = ''.join(node.original(renderer) for node in self.nodes)
+        result = self.wrap(nested_content)
+        return renderer.render_node(self, result)
+
+
+class ZendeskArtTabs(ZendeskArtNode):
     symbol = ZendeskArtSymbols.tabs.value
     name = 'tabs'
 
 
-class ZendeskArtCallout(Node):
+class ZendeskArtCallout(ZendeskArtNode):
     symbol = ZendeskArtSymbols.callout.value
     name = 'callout'
 
@@ -240,3 +263,10 @@ class ZendeskArtCallout(Node):
         if not isinstance(other, ZendeskArtCallout):
             return False
         return self.style == other.style
+
+    def wrap(self, content: str) -> str:
+        if self.style:
+            attr = f' {self.style}'
+        else:
+            attr = ''
+        return f'<{self.name}{attr}>\n\n{content}</{self.name}>\n'
