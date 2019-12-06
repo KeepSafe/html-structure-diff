@@ -5,7 +5,7 @@ import typing
 from typing import Union
 
 if typing.TYPE_CHECKING:
-    from sdiff.renderer import HtmlRenderer, TextRenderer
+    from sdiff.renderer import HtmlRenderer, TextRenderer  # noqa
 
 
 class Symbols(Enum):

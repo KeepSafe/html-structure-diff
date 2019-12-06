@@ -1,6 +1,6 @@
 from typing import Type
 
-from .parser import parse, MdParser, ZendeskHelpMdParser
+from .parser import parse, MdParser, ZendeskHelpMdParser  # noqa
 from .renderer import TextRenderer
 from .compare import diff_struct, diff_links  # noqa
 

@@ -150,7 +150,6 @@ class TestZendeskParser(ParserTestCase):
         self.assertEqual(actual.nodes[0], ZendeskHelpSteps())
 
 
-
 class TestReplaceLines(TestCase):
 
     def test_single_empty_line(self):

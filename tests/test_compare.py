@@ -76,4 +76,3 @@ class TestDifferent(TestCase):
             actual = errors[1].node
             self.assertEqual(actual, List(ordered=True))
             self.assertEqual(actual.meta.get('style'), 'ins')
-
