@@ -1,5 +1,6 @@
 from unittest import TestCase
 from sdiff import parser, BlockLexer, ZendeskArtBlockLexer
+from sdiff.model import ZendeskArtSteps
 
 
 class ParserTestCase(TestCase):
@@ -133,6 +134,21 @@ class TestZendeskParser(ParserTestCase):
             </tabs>
             """ % steps_fixture
             self._run_and_assert(fixture, 'T1tpt1tSlmtmtmt')
+
+    def test_invalid_closing_tag(self):
+        fixture = """
+        <steps>
+        1. one
+        </step>
+        """
+        actual = self._parse(fixture)
+        self.assertNotEqual(actual.nodes[0], ZendeskArtSteps())
+
+    def test_parses_with_invalid_formatting(self):
+        fixture = '<steps>1. one</steps>'
+        actual = self._parse(fixture)
+        self.assertEqual(actual.nodes[0], ZendeskArtSteps())
+
 
 
 class TestReplaceLines(TestCase):
