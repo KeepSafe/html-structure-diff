@@ -32,7 +32,7 @@ class Node(object):
     name = ''
 
     def __init__(self, nodes=None):
-        self.nodes = nodes or []
+        self.nodes: typing.List[Node] = nodes or []
         self.meta = {}
 
     def __str__(self):
@@ -122,6 +122,14 @@ class List(Node):
     def __init__(self, ordered, nodes=None):
         super().__init__(nodes)
         self.ordered = ordered
+
+    def __hash__(self):
+        return hash((self.symbol, self.ordered))
+
+    def __eq__(self, other):
+        if not isinstance(other, List):
+            return False
+        return self.ordered == other.ordered
 
     def __repr__(self):
         return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'ordered': self.ordered})

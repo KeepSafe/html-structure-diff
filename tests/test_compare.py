@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from sdiff.compare import diff_links, diff_struct
+from sdiff.model import List
 from .fixtures import trees
 
 
@@ -61,3 +62,18 @@ class TestDifferent(TestCase):
         _, _, errors = diff_struct(trees.pt(), trees.ptnt())
         self.assertEqual('n', errors[0].node.symbol)
         self.assertEqual('text', errors[1].node.text)
+
+    def test_different_lists(self):
+        unordered = trees.lm2tm2t(False)
+        ordered = trees.lm2tm2t(True)
+        _, _, errors = diff_struct(unordered, ordered)
+
+        with self.subTest('missing unordered list'):
+            actual = errors[0].node
+            self.assertEqual(actual, List(ordered=False))
+            self.assertEqual(actual.meta.get('style'), 'del')
+        with self.subTest('additional ordered list'):
+            actual = errors[1].node
+            self.assertEqual(actual, List(ordered=True))
+            self.assertEqual(actual.meta.get('style'), 'ins')
+

@@ -29,9 +29,9 @@ def r4t():
     ])
 
 
-def lm2tm2t():
+def lm2tm2t(ordered=False):
     return Root([
-        List([
+        List(ordered, [
             ListItem([
                 Header(2, [
                     Text('dummy text')
