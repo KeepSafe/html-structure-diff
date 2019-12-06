@@ -97,7 +97,7 @@ def pta2t():
 
 def Slmtmt():  # noqa
     return Root([
-        ZendeskArtSteps([
+        ZendeskHelpSteps([
             List(True, [
                 ListItem([
                     Text('one')
@@ -112,7 +112,7 @@ def Slmtmt():  # noqa
 
 def T1tpt():  # noqa
     return Root([
-        ZendeskArtTabs([
+        ZendeskHelpTabs([
             Header(1, [
                 Text('tab title')
             ]),
@@ -125,7 +125,7 @@ def T1tpt():  # noqa
 
 def C1tpt(style=None):  # noqa
     return Root([
-        ZendeskArtCallout(style, [
+        ZendeskHelpCallout(style, [
             Header(1, [
                 Text('callout title')
             ]),

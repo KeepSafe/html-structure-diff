@@ -225,7 +225,7 @@ class NewLine(Node):
         return renderer.render_node(self, u'  \u00B6\n')
 
 
-class ZendeskArtNode(Node, ABC):
+class ZendeskHelpNode(Node, ABC):
     def wrap(self, content: str) -> str:
         return f'<{self.name}>\n\n{content}</{self.name}>\n'
 
@@ -235,7 +235,7 @@ class ZendeskArtNode(Node, ABC):
         return renderer.render_node(self, result)
 
 
-class ZendeskArtSteps(ZendeskArtNode):
+class ZendeskHelpSteps(ZendeskHelpNode):
     symbol = ZendeskArtSymbols.steps.value
     name = 'steps'
 
@@ -248,12 +248,12 @@ class ZendeskArtSteps(ZendeskArtNode):
         return renderer.render_node(self, result)
 
 
-class ZendeskArtTabs(ZendeskArtNode):
+class ZendeskHelpTabs(ZendeskHelpNode):
     symbol = ZendeskArtSymbols.tabs.value
     name = 'tabs'
 
 
-class ZendeskArtCallout(ZendeskArtNode):
+class ZendeskHelpCallout(ZendeskHelpNode):
     symbol = ZendeskArtSymbols.callout.value
     name = 'callout'
 
@@ -268,7 +268,7 @@ class ZendeskArtCallout(ZendeskArtNode):
         return hash((self.name, self.style))
 
     def __eq__(self, other):
-        if not isinstance(other, ZendeskArtCallout):
+        if not isinstance(other, ZendeskHelpCallout):
             return False
         return self.style == other.style
 

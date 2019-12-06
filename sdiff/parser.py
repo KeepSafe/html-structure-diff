@@ -57,7 +57,7 @@ class InlineLexer(mistune.BlockLexer):
             self.tokens.append(node)
 
 
-class BlockLexer(mistune.BlockLexer):
+class MdParser(mistune.BlockLexer):
     default_rules = [
         'newline', 'list_block', 'block_html',
         'heading', 'lheading',
@@ -169,7 +169,7 @@ class BlockLexer(mistune.BlockLexer):
         return result
 
 
-class ZendeskArtBlockLexer(BlockLexer):
+class ZendeskHelpMdParser(MdParser):
     TAG_CONTENT_GROUP = 'tag_content'
     TAG_PATTERN = r'^\s*(<{tag_name}{attr_re}>(?P<%s>[\s\S]+?)</{tag_name}>)\s*$' % TAG_CONTENT_GROUP
     CALLOUT_STYLE_GROUP = 'style'
@@ -189,13 +189,13 @@ class ZendeskArtBlockLexer(BlockLexer):
 
     def parse_callout(self, m: Match[str]) -> None:
         style = m.group(self.CALLOUT_STYLE_GROUP)
-        self._parse_nested(ZendeskArtCallout(style), m)
+        self._parse_nested(ZendeskHelpCallout(style), m)
 
     def parse_steps(self, m: Match[str]) -> None:
-        self._parse_nested(ZendeskArtSteps(), m)
+        self._parse_nested(ZendeskHelpSteps(), m)
 
     def parse_tabs(self, m: Match[str]) -> None:
-        self._parse_nested(ZendeskArtTabs(), m)
+        self._parse_nested(ZendeskHelpTabs(), m)
 
     def _parse_nested(self, node: Node, m: Match[str]) -> None:
         nested_content = m.group(self.TAG_CONTENT_GROUP)
@@ -212,9 +212,9 @@ def _remove_ltr_rtl_marks(text):
     return re.sub(r'(\u200e|\u200f)', '', text)
 
 
-def parse(text, lexer_cls: Type[BlockLexer] = BlockLexer):
+def parse(text, parser_cls: Type[MdParser] = MdParser):
     # HACK dirty hack to be consistent with Markdown list_block
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
-    block_lexer = lexer_cls()
+    block_lexer = parser_cls()
     return Root(block_lexer.parse(text))

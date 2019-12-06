@@ -4,7 +4,7 @@ import os
 import sdiff
 from pathlib import Path
 
-from sdiff import ZendeskArtBlockLexer
+from sdiff import ZendeskHelpMdParser
 
 
 def _load_fixture(*path):
@@ -25,7 +25,7 @@ class TestSdiff(TestCase):
             with self.subTest(case=case):
                 path1, path2 = case
                 _, _, errors = sdiff.diff(_load_fixture('same', path1), _load_fixture('same', path2),
-                                          parser_cls=ZendeskArtBlockLexer)
+                                          parser_cls=ZendeskHelpMdParser)
                 self.assertEqual([], errors, msg=case)
 
     def test_different(self):
@@ -34,5 +34,5 @@ class TestSdiff(TestCase):
             with self.subTest(case=case):
                 path1, path2 = case
                 _, _, errors = sdiff.diff(_load_fixture('different', path1), _load_fixture('different', path2),
-                                          parser_cls=ZendeskArtBlockLexer)
+                                          parser_cls=ZendeskHelpMdParser)
                 self.assertNotEqual([], errors, msg=case)

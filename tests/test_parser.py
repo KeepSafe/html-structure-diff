@@ -1,19 +1,19 @@
 from unittest import TestCase
-from sdiff import parser, BlockLexer, ZendeskArtBlockLexer
-from sdiff.model import ZendeskArtSteps
+from sdiff import parser, MdParser, ZendeskHelpMdParser
+from sdiff.model import ZendeskHelpSteps
 
 
 class ParserTestCase(TestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.parser_cls = BlockLexer
+        self.parser_cls = MdParser
 
     def _run_and_assert(self, data: str, expected: str):
-        actual = parser.parse(data, lexer_cls=self.parser_cls).print_all()
+        actual = parser.parse(data, parser_cls=self.parser_cls).print_all()
         self.assertEqual(expected, actual)
 
     def _parse(self, data: str):
-        return parser.parse(data, lexer_cls=self.parser_cls)
+        return parser.parse(data, parser_cls=self.parser_cls)
 
 
 class TestParser(ParserTestCase):
@@ -72,7 +72,7 @@ class TestParser(ParserTestCase):
 class TestZendeskParser(ParserTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.parser_cls = ZendeskArtBlockLexer
+        self.parser_cls = ZendeskHelpMdParser
 
     def test_callout(self):
         fixture = """
@@ -142,12 +142,12 @@ class TestZendeskParser(ParserTestCase):
         </step>
         """
         actual = self._parse(fixture)
-        self.assertNotEqual(actual.nodes[0], ZendeskArtSteps())
+        self.assertNotEqual(actual.nodes[0], ZendeskHelpSteps())
 
     def test_parses_with_invalid_formatting(self):
         fixture = '<steps>1. one</steps>'
         actual = self._parse(fixture)
-        self.assertEqual(actual.nodes[0], ZendeskArtSteps())
+        self.assertEqual(actual.nodes[0], ZendeskHelpSteps())
 
 
 
