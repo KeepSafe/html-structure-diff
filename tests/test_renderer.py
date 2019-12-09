@@ -22,6 +22,22 @@ class TestTextRenderer(TestCase):
         actual = self.renderer.render(trees.pta2t())
         self.assertEqual('test link\n\n##heading', actual)
 
+    def test_zendesk_steps(self):
+        actual = self.renderer.render(trees.Slmtmt())
+        self.assertEqual('<steps>\n\n0. one\n1. two\n\n\n</steps>', actual)
+
+    def test_zendesk_tabs(self):
+        actual = self.renderer.render(trees.T1tpt())
+        self.assertEqual('<tabs>\n\n#tab title\n\ntab content\n\n</tabs>', actual)
+
+    def test_zendesk_callout(self):
+        actual = self.renderer.render(trees.C1tpt())
+        self.assertEqual('<callout>\n\n#callout title\n\ncallout content\n\n</callout>', actual)
+
+    def test_zendesk_callout_styled(self):
+        actual = self.renderer.render(trees.C1tpt(style='awesome'))
+        self.assertEqual('<callout awesome>\n\n#callout title\n\ncallout content\n\n</callout>', actual)
+
 
 class TestHtmlRenderer(TestCase):
 

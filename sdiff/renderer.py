@@ -1,6 +1,9 @@
+from sdiff.model import Root, Node
+
+
 class HtmlRenderer(object):
 
-    def render(self, tree):
+    def render(self, tree: Root):
         result = tree.original(self)
         return '<pre>\n%s\n</pre>' % result.strip()
 
@@ -14,9 +17,9 @@ class HtmlRenderer(object):
 
 class TextRenderer(object):
 
-    def render(self, tree):
+    def render(self, tree: Root):
         result = tree.original(self)
         return result.strip()
 
-    def render_node(self, node, text):
+    def render_node(self, node: Node, text):
         return text

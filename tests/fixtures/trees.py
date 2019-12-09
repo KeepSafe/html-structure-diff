@@ -29,9 +29,9 @@ def r4t():
     ])
 
 
-def lm2tm2t():
+def lm2tm2t(ordered=False):
     return Root([
-        List([
+        List(ordered, [
             ListItem([
                 Header(2, [
                     Text('dummy text')
@@ -91,5 +91,46 @@ def pta2t():
         ]),
         Header(2, [
             Text('heading')
+        ])
+    ])
+
+
+def Slmtmt():  # noqa
+    return Root([
+        ZendeskHelpSteps([
+            List(True, [
+                ListItem([
+                    Text('one')
+                ]),
+                ListItem([
+                    Text('two')
+                ])
+            ])
+        ])
+    ])
+
+
+def T1tpt():  # noqa
+    return Root([
+        ZendeskHelpTabs([
+            Header(1, [
+                Text('tab title')
+            ]),
+            Paragraph([
+                Text('tab content')
+            ])
+        ])
+    ])
+
+
+def C1tpt(style=None):  # noqa
+    return Root([
+        ZendeskHelpCallout(style, [
+            Header(1, [
+                Text('callout title')
+            ]),
+            Paragraph([
+                Text('callout content')
+            ])
         ])
     ])

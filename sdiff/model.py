@@ -1,4 +1,11 @@
+from abc import ABC
 from enum import Enum
+
+import typing
+from typing import Union
+
+if typing.TYPE_CHECKING:
+    from sdiff.renderer import HtmlRenderer, TextRenderer  # noqa
 
 
 class Symbols(Enum):
@@ -14,12 +21,18 @@ class Symbols(Enum):
     new_line = 'n'
 
 
+class ZendeskArtSymbols(Enum):
+    steps = 'S'
+    tabs = 'T'
+    callout = 'C'
+
+
 class Node(object):
     symbol = Symbols.null.value
     name = ''
 
     def __init__(self, nodes=None):
-        self.nodes = nodes or []
+        self.nodes: typing.List[Node] = nodes or []
         self.meta = {}
 
     def __str__(self):
@@ -109,6 +122,14 @@ class List(Node):
     def __init__(self, ordered, nodes=None):
         super().__init__(nodes)
         self.ordered = ordered
+
+    def __hash__(self):
+        return hash((self.symbol, self.ordered))
+
+    def __eq__(self, other):
+        if not isinstance(other, List):
+            return False
+        return self.ordered == other.ordered
 
     def __repr__(self):
         return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'ordered': self.ordered})
@@ -202,3 +223,58 @@ class NewLine(Node):
 
     def original(self, renderer):
         return renderer.render_node(self, u'  \u00B6\n')
+
+
+class ZendeskHelpNode(Node, ABC):
+    def wrap(self, content: str) -> str:
+        return f'<{self.name}>\n\n{content}</{self.name}>\n'
+
+    def original(self, renderer: Union['HtmlRenderer', 'TextRenderer']) -> str:
+        nested_content = ''.join(node.original(renderer) for node in self.nodes)
+        result = self.wrap(nested_content)
+        return renderer.render_node(self, result)
+
+
+class ZendeskHelpSteps(ZendeskHelpNode):
+    symbol = ZendeskArtSymbols.steps.value
+    name = 'steps'
+
+    def wrap(self, content: str) -> str:
+        return f'<{self.name}>\n\n{content}</{self.name}>\n'
+
+    def original(self, renderer: Union['HtmlRenderer', 'TextRenderer']) -> str:
+        nested_content = ''.join(node.original(renderer) for node in self.nodes)
+        result = self.wrap(nested_content)
+        return renderer.render_node(self, result)
+
+
+class ZendeskHelpTabs(ZendeskHelpNode):
+    symbol = ZendeskArtSymbols.tabs.value
+    name = 'tabs'
+
+
+class ZendeskHelpCallout(ZendeskHelpNode):
+    symbol = ZendeskArtSymbols.callout.value
+    name = 'callout'
+
+    def __init__(self, style: str = None, nodes: typing.List[Node] = None):
+        super().__init__(nodes)
+        self.style = style
+
+    def __repr__(self):
+        return repr({'type': self.name, 'meta': self.meta, 'nodes': self.nodes, 'style': self.style})
+
+    def __hash__(self):
+        return hash((self.name, self.style))
+
+    def __eq__(self, other):
+        if not isinstance(other, ZendeskHelpCallout):
+            return False
+        return self.style == other.style
+
+    def wrap(self, content: str) -> str:
+        if self.style:
+            attr = f' {self.style}'
+        else:
+            attr = ''
+        return f'<{self.name}{attr}>\n\n{content}</{self.name}>\n'
