@@ -5,18 +5,25 @@ PIP=venv/bin/pip
 NOSE=venv/bin/nosetests
 FLAKE=venv/bin/flake8
 FLAGS=
+PYPICLOUD_HOST=pypicloud.getkeepsafe.local
+TWINE=./venv/bin/twine
 
+update:
+	$(PIP) install -U pip
+	$(PIP) install -U .
 
 env:
-	python3 -m venv venv
-	$(PYTHON) ./setup.py develop
+	test -d venv || python3 -m venv venv
 
-dev:
-	$(PIP) install -r requirements-dev.txt
-	$(PYTHON) ./setup.py develop
+dev: env update
+	$(PIP) install .[tests,devtools]
 
-install:
-	$(PYTHON) ./setup.py install
+install: env update
+
+publish:
+	rm -rf dist
+	$(PYTHON) -m build .
+	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
 
 flake:
 	$(FLAKE) sdiff tests
