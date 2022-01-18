@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 
-version = '0.4.0'
+version = '0.4.1'
 
 
 def read(f):
@@ -13,10 +13,20 @@ install_requires = [
     'mistune <= 1',
 ]
 
+tests_require = [
+    'nose',
+    'flake8',
+    'autopep8',
+]
+
+devtools_require = [
+    'twine',
+    'build',
+]
+
 setup(name='sdiff',
       version=version,
       description=('sdiff compares the structure of two markdown texts'),
-      long_description='\n\n'.join((read('README.md'), read('CHANGELOG'))),
       classifiers=[
           'License :: OSI Approved :: BSD License',
           'Intended Audience :: Developers',
@@ -29,4 +39,9 @@ setup(name='sdiff',
       package_data={},
       namespace_packages=[],
       install_requires=install_requires,
+      tests_require=tests_require,
+      extras_require={
+          'tests': tests_require,
+          'devtools': devtools_require,
+      },
       include_package_data=False)
