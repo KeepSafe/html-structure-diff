@@ -14,7 +14,8 @@ install_requires = [
 ]
 
 tests_require = [
-    'nose',
+    'pytest >= 8',
+    'coverage >= 7',
     'flake8',
     'autopep8',
 ]
