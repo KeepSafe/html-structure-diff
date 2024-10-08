@@ -1,4 +1,4 @@
-from typing import Match, Type
+from re import Match
 
 import mistune
 import re
@@ -76,10 +76,10 @@ class MdParser(mistune.BlockLexer):
     def __init__(self):
         super().__init__()
         self.grammar_class.block_html = re.compile(
-            r'^\s* *(?:%s|%s|%s) *(?:\n{1,}|\s*$)' % (
+            r'^\s* *(?:{}|{}|{}) *(?:\n{{1,}}|\s*$)'.format(
                 r'<!--[\s\S]*?-->',
-                r'<(%s)((?:%s)*?)>([\s\S]+?)<\/\1>' % (mistune._block_tag, mistune._valid_attr),
-                r'<%s(?:%s)*?>' % (mistune._block_tag, mistune._valid_attr),
+                r'<({})((?:{})*?)>([\s\S]+?)<\/\1>'.format(mistune._block_tag, mistune._valid_attr),
+                r'<{}(?:{})*?>'.format(mistune._block_tag, mistune._valid_attr),
             )
         )
 
@@ -212,7 +212,7 @@ def _remove_ltr_rtl_marks(text):
     return re.sub(r'(\u200e|\u200f)', '', text)
 
 
-def parse(text, parser_cls: Type[MdParser] = MdParser):
+def parse(text, parser_cls: type[MdParser] = MdParser):
     # HACK dirty hack to be consistent with Markdown list_block
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
