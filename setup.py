@@ -15,8 +15,8 @@ install_requires = [
 
 tests_require = [
     'pytest >= 8',
-    'coverage >= 7',
-    'flake8',
+    'coverage==7.6.1',
+    'flake8==7.1.1',
     'autopep8',
 ]
 
