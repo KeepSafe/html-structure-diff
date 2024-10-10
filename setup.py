@@ -27,6 +27,7 @@ devtools_require = [
 
 setup(name='sdiff',
       version=version,
+      python_requires='>=3.11',
       description=('sdiff compares the structure of two markdown texts'),
       classifiers=[
           'License :: OSI Approved :: BSD License',
