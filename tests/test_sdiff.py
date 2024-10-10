@@ -13,7 +13,7 @@ def _load_fixture(*path):
 
 def _read_test_files(dirpath):
     path = Path(os.path.join('tests/fixtures', dirpath))
-    filenames = set(f.name.split('.')[0] for f in path.glob('*.md'))
+    filenames = {f.name.split('.')[0] for f in path.glob('*.md')}
     return [('%s.en.md' % fn, '%s.de.md' % fn) for fn in filenames]
 
 

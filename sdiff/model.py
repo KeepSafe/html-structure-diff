@@ -27,12 +27,12 @@ class ZendeskArtSymbols(Enum):
     callout = 'C'
 
 
-class Node(object):
+class Node:
     symbol = Symbols.null.value
     name = ''
 
     def __init__(self, nodes=None):
-        self.nodes: typing.List[Node] = nodes or []
+        self.nodes: list[Node] = nodes or []
         self.meta = {}
 
     def __str__(self):
@@ -57,7 +57,7 @@ class Node(object):
         self.nodes.extend(nodes)
 
     def print_all(self):
-        return '%s%s' % (self.symbol, ''.join(map(lambda i: i.print_all(), self.nodes)))
+        return '{}{}'.format(self.symbol, ''.join(map(lambda i: i.print_all(), self.nodes)))
 
 
 class Root(Node):
@@ -112,7 +112,7 @@ class Header(Node):
         return renderer.render_node(self, result)
 
     def print_all(self):
-        return '%s%s' % (self.level, ''.join(map(lambda i: i.print_all(), self.nodes)))
+        return '{}{}'.format(self.level, ''.join(map(lambda i: i.print_all(), self.nodes)))
 
 
 class List(Node):
@@ -138,7 +138,7 @@ class List(Node):
         result = ''
         for idx, node in enumerate(self.nodes):
             if self.ordered:
-                result += '%s. %s' % (idx, node.original(renderer))
+                result += '{}. {}'.format(idx, node.original(renderer))
             else:
                 result += '* ' + node.original(renderer)
         result = result + '\n\n'
@@ -222,7 +222,7 @@ class NewLine(Node):
         return repr({'type': self.name, 'meta': self.meta})
 
     def original(self, renderer):
-        return renderer.render_node(self, u'  \u00B6\n')
+        return renderer.render_node(self, '  \u00B6\n')
 
 
 class ZendeskHelpNode(Node, ABC):
@@ -257,7 +257,7 @@ class ZendeskHelpCallout(ZendeskHelpNode):
     symbol = ZendeskArtSymbols.callout.value
     name = 'callout'
 
-    def __init__(self, style: str = None, nodes: typing.List[Node] = None):
+    def __init__(self, style: str = None, nodes: list[Node] = None):
         super().__init__(nodes)
         self.style = style
 

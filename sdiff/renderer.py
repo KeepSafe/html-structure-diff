@@ -1,7 +1,7 @@
 from sdiff.model import Root, Node
 
 
-class HtmlRenderer(object):
+class HtmlRenderer:
 
     def render(self, tree: Root):
         result = tree.original(self)
@@ -15,7 +15,7 @@ class HtmlRenderer(object):
         return text
 
 
-class TextRenderer(object):
+class TextRenderer:
 
     def render(self, tree: Root):
         result = tree.original(self)

@@ -2,7 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 
-version = '0.4.1'
+version = '1.0.0'
 
 
 def read(f):
@@ -14,8 +14,9 @@ install_requires = [
 ]
 
 tests_require = [
-    'nose',
-    'flake8',
+    'pytest >= 8',
+    'coverage==7.6.1',
+    'flake8==7.1.1',
     'autopep8',
 ]
 

@@ -1,10 +1,11 @@
 language: python
+dist: jammy
 python:
-  - "3.6.6"
+  - "3.11"
 # command to install dependencies
 install:
-  - pip install -r requirements-dev.txt
+  - make dev
 # command to run tests
 script:
-  - flake8 sdiff tests
-  - nosetests
+  - make test
+  - make coverage

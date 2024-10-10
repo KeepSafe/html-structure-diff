@@ -2,7 +2,9 @@
 
 PYTHON=venv/bin/python3
 PIP=venv/bin/pip
-NOSE=venv/bin/nosetests
+COVERAGE=venv/bin/coverage
+TEST_RUNNER=venv/bin/pytest
+TEST_RUNNER_FLAGS=-s --durations=3 --durations-min=0.005
 FLAKE=venv/bin/flake8
 FLAGS=
 PYPICLOUD_HOST=pypicloud.getkeepsafe.local
@@ -29,14 +31,16 @@ flake:
 	$(FLAKE) sdiff tests
 
 test: flake
-	$(NOSE) -s $(FLAGS)
+	$(COVERAGE) run -m pytest $(TEST_RUNNER_FLAGS)
 
 vtest:
-	$(NOSE) -s -v $(FLAGS)
+	$(COVERAGE) run -m pytest -v $(TEST_RUNNER_FLAGS)
+
+testloop:
+	while sleep 1; do $(TEST_RUNNER) -s --lf $(TEST_RUNNER_FLAGS); done
 
 cov cover coverage:
-	$(NOSE) -s --with-cover --cover-html --cover-html-dir ./coverage $(FLAGS)
-	echo "open file://`pwd`/coverage/index.html"
+	$(COVERAGE) report -m
 
 clean:
 	rm -rf `find . -name __pycache__`

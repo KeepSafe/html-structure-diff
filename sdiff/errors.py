@@ -1,4 +1,4 @@
-class DiffError(object):
+class DiffError:
 
     def __str__(self):
         return self.message
