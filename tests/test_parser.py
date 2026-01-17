@@ -28,9 +28,13 @@ class TestParser(ParserTestCase):
 
     def test_link(self):
         self._run_and_assert('[link](url)', 'pa')
+        actual = self._parse('[link](url)')
+        self.assertEqual('[link](url)', actual.nodes[0].nodes[0].text)
 
     def test_image(self):
         self._run_and_assert('![Alt text][url/to/image]', 'pi')
+        actual = self._parse('![Alt text][url/to/image]')
+        self.assertEqual('![Alt text][url/to/image]', actual.nodes[0].nodes[0].text)
 
     def test_broken_link_space(self):
         self._run_and_assert('[link] (http://www.google.com)', 'pt')
@@ -67,6 +71,39 @@ class TestParser(ParserTestCase):
 
     def test_link_wrapped_in_text(self):
         self._run_and_assert('some text [link](url) new text', 'ptat')
+
+    def test_link_label_with_codespan(self):
+        actual = self._parse('[use `foo`](url)')
+        self.assertEqual('[use `foo`](url)', actual.nodes[0].nodes[0].text)
+
+    def test_reference_definition_preserved(self):
+        data = 'See [API][id].\n\n[id]: https://example.com'
+        tree = self._parse(data)
+        link = next(node for node in tree.nodes[0].nodes if node.name == 'link')
+        self.assertEqual('[API][id]', link.text)
+        self.assertEqual('[id]: https://example.com', tree.nodes[1].nodes[0].text)
+
+    def test_reference_definition_inside_fence_is_text(self):
+        data = """```
+[id]: https://example.com
+[link][id]
+```"""
+        tree = self._parse(data)
+        self.assertEqual('pt', tree.print_all())
+
+    def test_softbreak_preserves_space(self):
+        actual = self._parse('hello\nworld')
+        self.assertEqual('hello world', actual.nodes[0].nodes[0].text)
+
+    def test_ordered_list_parses_as_ordered(self):
+        tree = self._parse('1. one\n2. two')
+        list_node = tree.nodes[0]
+        self.assertTrue(list_node.ordered)
+
+    def test_unordered_list_parses_as_unordered(self):
+        tree = self._parse('- one\n- two')
+        list_node = tree.nodes[0]
+        self.assertFalse(list_node.ordered)
 
 
 class TestZendeskParser(ParserTestCase):
@@ -113,6 +150,13 @@ class TestZendeskParser(ParserTestCase):
         </tabs>
         """
         self._run_and_assert(fixture, 'T1tpt1tpt')
+
+    def test_inline_callout_is_structural(self):
+        fixture = """intro <callout>
+# title
+content
+</callout> outro"""
+        self._run_and_assert(fixture, 'ptC1tptpt')
 
     def test_steps(self):
         steps_fixture = """
@@ -166,3 +210,8 @@ class TestReplaceLines(TestCase):
         text = 'test  \n  test'
         actual = parser._remove_spaces_from_empty_lines(text)
         self.assertEqual(text, actual)
+
+    def test_remove_ltr_rtl_marks(self):
+        text = 'a\u200eb\u200f'
+        actual = parser._remove_ltr_rtl_marks(text)
+        self.assertEqual('ab', actual)

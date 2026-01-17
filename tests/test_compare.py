@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sdiff.compare import diff_links, diff_struct
-from sdiff.model import List
+from sdiff.model import List, Link, Paragraph, Root
 from .fixtures import trees
 
 
@@ -38,8 +38,10 @@ class TestEqual(TestCase):
         _, _, errors = diff_struct(trees.lm2tm2t(), trees.lm2tm2t())
         self.assertEqual([], errors)
 
-    def test_concatenate_text_nodes_when_element_in_middle_ignored(self):
-        _, _, errors = diff_struct(trees.ptat(), trees.pt())
+    def test_link_content_ignored(self):
+        left = Root([Paragraph([Link('left link')])])
+        right = Root([Paragraph([Link('right link')])])
+        _, _, errors = diff_struct(left, right)
         self.assertEqual([], errors)
 
 
@@ -76,3 +78,7 @@ class TestDifferent(TestCase):
             actual = errors[1].node
             self.assertEqual(actual, List(ordered=True))
             self.assertEqual(actual.meta.get('style'), 'ins')
+
+    def test_missing_link(self):
+        _, _, errors = diff_links(trees.ptat(), trees.pt())
+        self.assertTrue(any(error.node.name == 'link' for error in errors))

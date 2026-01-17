@@ -1,207 +1,351 @@
-from re import Match
+import re
+import textwrap
+from typing import Iterable
 
 import mistune
-import re
+from mistune import block_parser
 
-from .model import *
+from .model import (Html, Image, Link, List, ListItem, NewLine, Paragraph, Root,
+                    Text, Header, ZendeskHelpCallout, ZendeskHelpSteps,
+                    ZendeskHelpTabs)
 
-
-class InlineLexer(mistune.BlockLexer):
-    grammar_class = mistune.InlineGrammar
-
-    default_rules = [
-        'linebreak', 'link',
-        'reflink', 'text',
-    ]
-
-    def __init__(self):
-        self.links = {}
-        self.grammar_class.text = re.compile(r'^ {1,}\n|^[\s\S]+?(?=[\[`~]| {2,}\n|$)')
-        super().__init__()
-
-    def parse_autolink(self, m):
-        self.tokens.append(Link(m.group(0)))
-
-    def parse_url(self, m):
-        self.tokens.append(Link(m.group(0)))
-
-    def parse_link(self, m):
-        return self._process_link(m)
-
-    def parse_reflink(self, m):
-        # TODO skip this check for now
-        # key = mistune._keyify(m.group(2) or m.group(1))
-        # if key not in self.links:
-        #     return None
-        # ret = self.links[key]
-        return self._process_link(m)
-
-    def _process_link(self, m):
-        line = m.group(0)
-        if line[0] == '!':
-            node = Image(line)
-        else:
-            node = Link(line)
-
-        self.tokens.append(node)
-
-    def parse_linebreak(self, m):
-        node = NewLine()
-        self.tokens.append(node)
-
-    def parse_text(self, m):
-        text = m.group(0)
-        if text.strip():
-            escaped_text = mistune.escape(text)
-            node = Text(escaped_text)
-            self.tokens.append(node)
+_BLOCK_TAGS = {tag.lower() for tag in block_parser.BLOCK_TAGS}
+_HEADING_LINE_RE = re.compile(r'^(\s*)(#{1,6})(?!#)(?=\S)')
+_REF_LINK_OR_IMAGE_RE = re.compile(r'!?\[[^\]]+\]\[[^\]]+\]')
+_REF_DEF_LINE_RE = re.compile(r'^\s{0,3}\[[^\]]+\]:\s+\S+')
+_FENCE_RE = re.compile(r'^\s*(```|~~~)')
 
 
-class MdParser(mistune.BlockLexer):
-    default_rules = [
-        'newline', 'list_block', 'block_html',
-        'heading', 'lheading',
-        'paragraph', 'text',
-    ]
-
-    list_rules = (
-        'newline', 'heading', 'lheading',
-        'hrule', 'list_block', 'text',
-    )
-
+class MdParser:
     @classmethod
     def get_lexer(cls):
         return cls()
 
     def __init__(self):
-        super().__init__()
-        self.grammar_class.block_html = re.compile(
-            r'^\s* *(?:{}|{}|{}) *(?:\n{{1,}}|\s*$)'.format(
-                r'<!--[\s\S]*?-->',
-                r'<({})((?:{})*?)>([\s\S]+?)<\/\1>'.format(mistune._block_tag, mistune._valid_attr),
-                r'<{}(?:{})*?>'.format(mistune._block_tag, mistune._valid_attr),
-            )
-        )
+        self._markdown = mistune.create_markdown(renderer='ast')
+        self._reference_definitions = {}
 
-    def _parse_inline(self, text):
-        inline = InlineLexer()
-        return inline.parse(text)
+    def parse(self, text):
+        tokens = self._markdown(text)
+        return Root(self._convert_block_tokens(tokens))
 
-    def parse_newline(self, m):
-        length = len(m.group(0))
-        if length > 1:
-            self.tokens.append(NewLine())
+    def _set_reference_definitions(self, definitions):
+        self._reference_definitions = definitions
 
-    def parse_heading(self, m):
-        level = len(m.group(1))
-        node = Header(level)
-        node.add_nodes(self._parse_inline(m.group(2)))
-        self.tokens.append(node)
+    def _convert_block_tokens(self, tokens: Iterable[dict]):
+        nodes = []
+        for token in tokens:
+            nodes.extend(self._convert_block_token(token))
+        return nodes
 
-    def parse_lheading(self, m):
-        level = 1 if m.group(2) == '=' else 2
-        text = m.group(1)
-        node = Header(level)
-        node.add_nodes(self._parse_inline(text))
-        self.tokens.append(node)
+    def _convert_block_token(self, token):
+        token_type = token.get('type')
+        if token_type == 'paragraph':
+            return [self._convert_paragraph_or_heading(token.get('children', []))]
+        if token_type == 'heading':
+            return [self._convert_heading(token)]
+        if token_type == 'list':
+            return [self._convert_list(token)]
+        if token_type == 'list_item':
+            return [self._convert_list_item(token)]
+        if token_type == 'block_text':
+            return [self._convert_paragraph_or_heading(token.get('children', []))]
+        if token_type == 'block_html':
+            return self._convert_block_html(token)
+        if token_type in {'thematic_break', 'block_quote', 'block_code', 'fenced_code'}:
+            return self._convert_passthrough_block(token)
+        return self._convert_passthrough_block(token)
 
-    def parse_block_html(self, m):
-        text = m.group(0)
-        html = Html(text)
-        self.tokens.append(html)
+    def _convert_heading(self, token):
+        level = token.get('level') or token.get('attrs', {}).get('level', 1)
+        header = Header(level)
+        header.add_nodes(self._convert_inline_tokens(token.get('children', [])))
+        return header
 
-    def parse_paragraph(self, m):
-        text = m.group(1).rstrip('\n')
-        node = Paragraph()
-        node.add_nodes(self._parse_inline(text))
-        self.tokens.append(node)
+    def _convert_list(self, token):
+        ordered = token.get('ordered')
+        if ordered is None:
+            ordered = token.get('attrs', {}).get('ordered', False)
+        list_node = List(bool(ordered))
+        for item in token.get('children', []):
+            list_node.add_node(self._convert_list_item(item))
+        return list_node
 
-    def parse_text(self, m):
-        text = m.group(0)
-        escaped_text = mistune.escape(text)
-        node = Text(escaped_text)
-        self.tokens.append(node)
+    def _convert_block_html(self, token):
+        raw = token.get('raw', '')
+        if _is_block_html(raw):
+            return [Html(raw)]
+        text = mistune.escape(raw)
+        if text.strip():
+            return [Paragraph([Text(text)])]
+        return []
 
-    def parse_list_block(self, m):
-        bull = m.group(2)
-        cap = m.group(0)
-        ordered = '.' in bull
-        node = List(ordered)
-        node.add_nodes(self._process_list_item(cap, bull))
-        self.tokens.append(node)
+    def _convert_passthrough_block(self, token):
+        child_nodes = self._convert_block_tokens(token.get('children', []))
+        if child_nodes:
+            return child_nodes
+        raw = token.get('raw') or token.get('text') or ''
+        if raw.strip():
+            return [Paragraph([Text(mistune.escape(raw))])]
+        return []
 
-    def _process_list_item(self, cap, bull):
-        result = []
-        cap = self.rules.list_item.findall(cap)
+    def _convert_list_item(self, token):
+        item = ListItem()
+        for child in token.get('children', []):
+            child_type = child.get('type')
+            if child_type in {'block_text', 'paragraph'}:
+                item.add_nodes(self._convert_list_block_nodes(child.get('children', [])))
+            else:
+                item.add_nodes(self._convert_block_tokens([child]))
+        return item
 
-        _next = False
-        length = len(cap)
+    def _convert_inline_tokens(self, tokens: Iterable[dict]):
+        nodes = []
+        buffer = ''
 
-        for i in range(length):
-            item = cap[i][0]
+        def flush_buffer():
+            nonlocal buffer
+            if buffer:
+                self._split_reference_links(buffer, nodes)
+                buffer = ''
 
-            # remove the bullet
-            space = len(item)
-            item = self.rules.list_bullet.sub('', item)
+        for token in tokens:
+            token_type = token.get('type')
+            if token_type in {'text', 'inline_html', 'block_html'}:
+                buffer += token.get('raw', '')
+            elif token_type == 'codespan':
+                buffer += f"`{token.get('raw') or token.get('text') or ''}`"
+            elif token_type == 'softbreak':
+                buffer += ' '
+            elif token_type == 'linebreak':
+                flush_buffer()
+                nodes.append(NewLine())
+            elif token_type == 'link':
+                flush_buffer()
+                text = self._flatten_inline_text(token.get('children', []))
+                url = token.get('attrs', {}).get('url', '')
+                nodes.append(Link(f"[{text}]({url})"))
+            elif token_type == 'image':
+                flush_buffer()
+                alt = token.get('attrs', {}).get('alt') or self._flatten_inline_text(token.get('children', []))
+                url = token.get('attrs', {}).get('url', '')
+                nodes.append(Image(f"![{alt}]({url})"))
+            else:
+                flush_buffer()
+                children = token.get('children', [])
+                if children:
+                    nodes.extend(self._convert_inline_tokens(children))
+                else:
+                    raw = token.get('raw') or token.get('text') or ''
+                    if raw.strip():
+                        _append_text(nodes, mistune.escape(raw))
 
-            # outdent
-            if '\n ' in item:
-                space = space - len(item)
-                pattern = re.compile(r'^ {1,%d}' % space, flags=re.M)
-                item = pattern.sub('', item)
+        flush_buffer()
+        return nodes
 
-            # determine whether item is loose or not
-            loose = _next
-            if not loose and re.search(r'\n\n(?!\s*$)', item):
-                loose = True
+    def _flatten_inline_text(self, tokens: Iterable[dict]):
+        parts = []
+        for token in tokens:
+            token_type = token.get('type')
+            if token_type in {'text', 'inline_html', 'block_html'}:
+                parts.append(token.get('raw') or token.get('text') or '')
+            elif token_type == 'codespan':
+                parts.append(f"`{token.get('raw') or token.get('text') or ''}`")
+            elif token_type in {'linebreak', 'softbreak'}:
+                parts.append(' ')
+            else:
+                children = token.get('children', [])
+                if children:
+                    parts.append(self._flatten_inline_text(children))
+                else:
+                    parts.append(token.get('raw') or token.get('text') or '')
+        return ''.join(parts).strip()
 
-            rest = len(item)
-            if i != length - 1 and rest:
-                _next = item[rest - 1] == '\n'
-                if not loose:
-                    loose = _next
+    def _convert_paragraph_or_heading(self, inline_tokens: Iterable[dict]):
+        ref_text = self._reference_definition_text(inline_tokens)
+        if ref_text is not None:
+            return Paragraph([Text(ref_text)])
+        heading = self._heading_from_inline(inline_tokens)
+        if heading:
+            return heading
+        return Paragraph(self._convert_inline_tokens(inline_tokens))
 
-            node = ListItem()
-            block_lexer = self.get_lexer()
-            nodes = block_lexer.parse(item, self.list_rules)
-            node.add_nodes(nodes)
-            result.append(node)
-        return result
+    def _convert_list_block_nodes(self, inline_tokens: Iterable[dict]):
+        heading = self._heading_from_inline(inline_tokens)
+        if heading:
+            return [heading]
+        return self._convert_inline_tokens(inline_tokens)
+
+    def _heading_from_inline(self, inline_tokens: Iterable[dict]):
+        if len(inline_tokens) != 1:
+            return None
+        token = inline_tokens[0]
+        if token.get('type') != 'text':
+            return None
+        raw = token.get('raw', '')
+        match = _HEADING_LINE_RE.match(raw)
+        if not match:
+            return None
+        level = len(match.group(2))
+        content = raw[match.end(2):].lstrip()
+        heading_tokens = self._markdown(f"{'#' * level} {content}")
+        if heading_tokens and heading_tokens[0].get('type') == 'heading':
+            children = heading_tokens[0].get('children', [])
+        else:
+            children = [{'type': 'text', 'raw': content}]
+        header = Header(level)
+        header.add_nodes(self._convert_inline_tokens(children))
+        return header
+
+    def _reference_definition_text(self, inline_tokens: Iterable[dict]):
+        if len(inline_tokens) != 1:
+            return None
+        token = inline_tokens[0]
+        if token.get('type') != 'text':
+            return None
+        raw = token.get('raw', '')
+        return self._reference_definitions.get(raw)
+
+    def _split_reference_links(self, raw: str, nodes):
+        last = 0
+        for match in _REF_LINK_OR_IMAGE_RE.finditer(raw):
+            if match.start() > last:
+                _append_text(nodes, mistune.escape(raw[last:match.start()]))
+            snippet = match.group(0)
+            if snippet.startswith('!['):
+                nodes.append(Image(snippet))
+            else:
+                nodes.append(Link(snippet))
+            last = match.end()
+        if last < len(raw):
+            _append_text(nodes, mistune.escape(raw[last:]))
+        return nodes
 
 
 class ZendeskHelpMdParser(MdParser):
-    TAG_CONTENT_GROUP = 'tag_content'
-    TAG_PATTERN = r'^\s*(<{tag_name}{attr_re}>(?P<%s>[\s\S]+?)</{tag_name}>)\s*$' % TAG_CONTENT_GROUP
-    CALLOUT_STYLE_GROUP = 'style'
-    CALLOUT_ATTR_PATTERN = r'( (?P<%s>green|red|yellow))*' % CALLOUT_STYLE_GROUP
+    _CALLOUT_PATTERN = re.compile(
+        r'(?s)<callout(?:\s+(?P<style>green|red|yellow))?>(?P<content>.*?)</callout>'
+    )
+    _STEPS_PATTERN = re.compile(r'(?s)<steps>(?P<content>.*?)</steps>')
+    _TABS_PATTERN = re.compile(r'(?s)<tabs>(?P<content>.*?)</tabs>')
 
-    def __init__(self):
-        super().__init__()
-        self.grammar_class.callout = re.compile(self.TAG_PATTERN.format(tag_name='callout',
-                                                                        attr_re=self.CALLOUT_ATTR_PATTERN))
-        self.default_rules.insert(0, 'callout')
+    def parse(self, text):
+        nodes = self._parse_nodes(text)
+        return Root(nodes)
 
-        self.grammar_class.steps = re.compile(self.TAG_PATTERN.format(tag_name='steps', attr_re=''))
-        self.default_rules.insert(0, 'steps')
+    def _parse_nodes(self, text: str):
+        nodes = []
+        remaining = text
+        while remaining:
+            tag_name, match = self._find_next_tag(remaining)
+            if not match:
+                nodes.extend(self._parse_markdown(_normalize_block_indentation(remaining)))
+                break
 
-        self.grammar_class.tabs = re.compile(self.TAG_PATTERN.format(tag_name='tabs', attr_re=''))
-        self.default_rules.insert(0, 'tabs')
+            if match.start() > 0:
+                prefix = remaining[:match.start()]
+                nodes.extend(self._parse_markdown(_normalize_block_indentation(prefix)))
 
-    def parse_callout(self, m: Match[str]) -> None:
-        style = m.group(self.CALLOUT_STYLE_GROUP)
-        self._parse_nested(ZendeskHelpCallout(style), m)
+            content = match.group('content')
+            if tag_name == 'callout':
+                node = ZendeskHelpCallout(match.group('style'))
+            elif tag_name == 'steps':
+                node = ZendeskHelpSteps()
+            else:
+                node = ZendeskHelpTabs()
 
-    def parse_steps(self, m: Match[str]) -> None:
-        self._parse_nested(ZendeskHelpSteps(), m)
+            node.add_nodes(self._parse_nodes(content))
+            nodes.append(node)
 
-    def parse_tabs(self, m: Match[str]) -> None:
-        self._parse_nested(ZendeskHelpTabs(), m)
+            remaining = remaining[match.end():]
+        return nodes
 
-    def _parse_nested(self, node: Node, m: Match[str]) -> None:
-        nested_content = m.group(self.TAG_CONTENT_GROUP)
-        nested_nodes = self.get_lexer().parse(nested_content)
-        node.add_nodes(nested_nodes)
-        self.tokens.append(node)
+    def _find_next_tag(self, text: str):
+        matches = []
+        for name, pattern in (
+            ('callout', self._CALLOUT_PATTERN),
+            ('steps', self._STEPS_PATTERN),
+            ('tabs', self._TABS_PATTERN),
+        ):
+            match = pattern.search(text)
+            if match:
+                matches.append((match.start(), name, match))
+        if not matches:
+            return None, None
+        _, name, match = min(matches, key=lambda item: item[0])
+        return name, match
+
+    def _parse_markdown(self, text: str):
+        normalized = _remove_spaces_from_empty_lines(text)
+        normalized = _remove_ltr_rtl_marks(normalized)
+        return self._convert_block_tokens(self._markdown(normalized))
+
+
+def _append_text(nodes, text):
+    if not text:
+        return
+    if nodes and isinstance(nodes[-1], Text):
+        nodes[-1].text += text
+    else:
+        nodes.append(Text(text))
+
+
+def _is_block_html(raw: str) -> bool:
+    stripped = raw.lstrip()
+    if stripped.startswith('<!--'):
+        return True
+    match = re.match(r'<\/?\s*([a-zA-Z0-9]+)', stripped)
+    if not match:
+        return False
+    return match.group(1).lower() in _BLOCK_TAGS
+
+
+def _normalize_block_indentation(text: str) -> str:
+    dedented = textwrap.dedent(text)
+    lines = dedented.splitlines()
+    indents = []
+    for line in lines:
+        if not line.strip():
+            continue
+        stripped = line.lstrip()
+        if stripped.startswith('<'):
+            continue
+        indent = len(line) - len(stripped)
+        indents.append(indent)
+    if indents:
+        min_indent = min(indents)
+        if min_indent:
+            lines = [line[min_indent:] if len(line) >= min_indent else line for line in lines]
+    return '\n'.join(lines).strip()
+
+
+def _extract_reference_definitions(text: str):
+    lines = text.splitlines()
+    output = []
+    definitions = {}
+    fence = None
+    counter = 0
+    for line in lines:
+        fence_match = _FENCE_RE.match(line)
+        if fence_match:
+            marker = fence_match.group(1)
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            output.append(line)
+            continue
+
+        if fence is None and _REF_DEF_LINE_RE.match(line):
+            placeholder = f"SDIFF_REF_DEF_{counter}"
+            counter += 1
+            definitions[placeholder] = line.strip()
+            output.append(placeholder)
+            continue
+
+        output.append(line)
+
+    return '\n'.join(output), definitions
 
 
 def _remove_spaces_from_empty_lines(text):
@@ -213,8 +357,10 @@ def _remove_ltr_rtl_marks(text):
 
 
 def parse(text, parser_cls: type[MdParser] = MdParser):
-    # HACK dirty hack to be consistent with Markdown list_block
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
-    block_lexer = parser_cls()
-    return Root(block_lexer.parse(text))
+    text, reference_definitions = _extract_reference_definitions(text)
+    parser = parser_cls()
+    if hasattr(parser, '_set_reference_definitions'):
+        parser._set_reference_definitions(reference_definitions)
+    return parser.parse(text)

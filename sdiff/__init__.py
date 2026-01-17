@@ -8,9 +8,8 @@ def diff(md1, md2, renderer=TextRenderer(), parser_cls: type[MdParser] = MdParse
     tree2 = parse(md2, parser_cls)
 
     tree1, tree2, struct_errors = diff_struct(tree1, tree2)
-    # tree1, tree2, links_errors = diff_links(tree1, tree2)
+    tree1, tree2, links_errors = diff_links(tree1, tree2)
 
-    # errors = struct_errors + links_errors
-    errors = struct_errors
+    errors = struct_errors + links_errors
 
     return renderer.render(tree1), renderer.render(tree2), errors
