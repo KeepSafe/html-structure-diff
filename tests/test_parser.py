@@ -1,6 +1,6 @@
 from unittest import TestCase
 from sdiff import parser, MdParser, ZendeskHelpMdParser
-from sdiff.model import ZendeskHelpSteps
+from sdiff.model import Paragraph, Root, Text, ZendeskHelpSteps
 
 
 class ParserTestCase(TestCase):
@@ -75,6 +75,14 @@ class TestParser(ParserTestCase):
     def test_link_label_with_codespan(self):
         actual = self._parse('[use `foo`](url)')
         self.assertEqual('[use `foo`](url)', actual.nodes[0].nodes[0].text)
+
+    def test_link_title_preserved(self):
+        actual = self._parse('[label](https://example.com "Title Here")')
+        self.assertEqual('[label](https://example.com "Title Here")', actual.nodes[0].nodes[0].text)
+
+    def test_image_title_preserved(self):
+        actual = self._parse('![alt](https://img "Img Title")')
+        self.assertEqual('![alt](https://img "Img Title")', actual.nodes[0].nodes[0].text)
 
     def test_reference_definition_preserved(self):
         data = 'See [API][id].\n\n[id]: https://example.com'
@@ -215,3 +223,15 @@ class TestReplaceLines(TestCase):
         text = 'a\u200eb\u200f'
         actual = parser._remove_ltr_rtl_marks(text)
         self.assertEqual('ab', actual)
+
+
+class DummyParser:
+    def parse(self, text):
+        return [Paragraph([Text(text)])]
+
+
+class TestParseWrapper(TestCase):
+    def test_wraps_list_parser_output(self):
+        tree = parser.parse('hello', parser_cls=DummyParser)
+        self.assertIsInstance(tree, Root)
+        self.assertEqual('pt', tree.print_all())

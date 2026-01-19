@@ -123,13 +123,17 @@ class MdParser:
             elif token_type == 'link':
                 flush_buffer()
                 text = self._flatten_inline_text(token.get('children', []))
-                url = token.get('attrs', {}).get('url', '')
-                nodes.append(Link(f"[{text}]({url})"))
+                attrs = token.get('attrs', {})
+                url = attrs.get('url', '')
+                title = attrs.get('title')
+                nodes.append(Link(_format_link_markup(text, url, title)))
             elif token_type == 'image':
                 flush_buffer()
                 alt = token.get('attrs', {}).get('alt') or self._flatten_inline_text(token.get('children', []))
-                url = token.get('attrs', {}).get('url', '')
-                nodes.append(Image(f"![{alt}]({url})"))
+                attrs = token.get('attrs', {})
+                url = attrs.get('url', '')
+                title = attrs.get('title')
+                nodes.append(Image(_format_image_markup(alt, url, title)))
             else:
                 flush_buffer()
                 children = token.get('children', [])
@@ -290,6 +294,21 @@ def _append_text(nodes, text):
         nodes.append(Text(text))
 
 
+def _format_title(title: str) -> str:
+    if title is None:
+        return ''
+    escaped = title.replace('"', '\\"')
+    return f' "{escaped}"'
+
+
+def _format_link_markup(text: str, url: str, title: str | None) -> str:
+    return f'[{text}]({url}{_format_title(title)})'
+
+
+def _format_image_markup(alt: str, url: str, title: str | None) -> str:
+    return f'![{alt}]({url}{_format_title(title)})'
+
+
 def _is_block_html(raw: str) -> bool:
     stripped = raw.lstrip()
     if stripped.startswith('<!--'):
@@ -363,4 +382,7 @@ def parse(text, parser_cls: type[MdParser] = MdParser):
     parser = parser_cls()
     if hasattr(parser, '_set_reference_definitions'):
         parser._set_reference_definitions(reference_definitions)
-    return parser.parse(text)
+    result = parser.parse(text)
+    if isinstance(result, list):
+        return Root(result)
+    return result
