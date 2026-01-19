@@ -19,6 +19,7 @@ env:
 
 dev: env update
 	$(PIP) install .[tests,devtools]
+	@$(MAKE) hooks
 
 install: env update
 
@@ -28,7 +29,19 @@ publish:
 	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
 
 flake:
+	$(PYTHON) -m autopep8 --exit-code --diff --max-line-length 120 -r sdiff tests
 	$(FLAKE) sdiff tests
+
+format:
+	$(PYTHON) -m autopep8 --in-place --max-line-length 120 -r sdiff tests
+
+hooks:
+	@if command -v npm >/dev/null 2>&1; then \
+		npm install --no-package-lock --silent; \
+		npm run --silent prepare; \
+	else \
+		echo "npm not found; skipping husky install"; \
+	fi
 
 test: flake
 	$(COVERAGE) run -m pytest $(TEST_RUNNER_FLAGS)
@@ -57,4 +70,4 @@ clean:
 	rm -rf venv
 
 
-.PHONY: all build env linux run pep test vtest testloop cov clean
+.PHONY: all build env linux run pep test vtest testloop cov clean hooks format

@@ -8,9 +8,11 @@ The core library lives in `sdiff/` (parser, comparer, renderer, and models). Tes
 - `make dev` installs the package plus test/dev extras (`.[tests,devtools]`) into the venv.
 - `make test` runs linting and the full pytest suite with coverage.
 - `make vtest` runs pytest verbosely.
-- `make flake` runs flake8 on `sdiff/` and `tests/`.
+- `make flake` runs the autopep8 format check and flake8 on `sdiff/` and `tests/`.
+- `make format` applies autopep8 formatting to `sdiff/` and `tests/`.
 - `make cov` prints the coverage report.
 - `make clean` removes build artifacts and the venv.
+- `make hooks` installs Husky git hooks (requires Node/npm; `make dev` runs this).
 
 Example flow:
 ```sh
