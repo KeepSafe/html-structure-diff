@@ -13,7 +13,7 @@ _BLOCK_TAGS = {tag.lower() for tag in block_parser.BLOCK_TAGS}
 _HEADING_LINE_RE = re.compile(r'^(\s*)(#{1,6})(?!#)(?=\S)')
 _REF_LINK_OR_IMAGE_RE = re.compile(r'!?\[[^\]]+\]\s*\[[^\]]*\]')
 _REF_DEF_LINE_RE = re.compile(r'^\s{0,3}\[[^\]]+\]:\s+\S+')
-_FENCE_RE = re.compile(r'^\s*(```|~~~)')
+_FENCE_RE = re.compile(r'^\s*(`{3,}|~{3,})')
 _INLINE_MARKERS = {
     'strong': '**',
     'emphasis': '*',
@@ -293,8 +293,11 @@ class ZendeskHelpMdParser(MdParser):
                 matches.append((match.start(), name, match))
         if not matches:
             return None, None
-        _, name, match = min(matches, key=lambda item: item[0])
-        return name, match
+        matches.sort(key=lambda item: item[0])
+        for _, name, match in matches:
+            if not _is_inside_fenced_block(text, match.start()):
+                return name, match
+        return None, None
 
     def _parse_markdown(self, text: str):
         normalized = _remove_spaces_from_empty_lines(text)
@@ -360,15 +363,20 @@ def _extract_reference_definitions(text: str):
     output = []
     definitions = {}
     fence = None
+    fence_len = 0
     counter = 0
     for line in lines:
         fence_match = _FENCE_RE.match(line)
         if fence_match:
             marker = fence_match.group(1)
+            marker_len = len(marker)
+            marker_char = marker[0]
             if fence is None:
-                fence = marker
-            elif fence == marker:
+                fence = marker_char
+                fence_len = marker_len
+            elif marker_char == fence and marker_len >= fence_len:
                 fence = None
+                fence_len = 0
             output.append(line)
             continue
 
@@ -382,6 +390,28 @@ def _extract_reference_definitions(text: str):
         output.append(line)
 
     return '\n'.join(output), definitions
+
+
+def _is_inside_fenced_block(text: str, offset: int) -> bool:
+    fence = None
+    fence_len = 0
+    running = 0
+    for line in text.splitlines(True):
+        line_len = len(line)
+        if running + line_len > offset:
+            return fence is not None
+        fence_match = _FENCE_RE.match(line)
+        if fence_match:
+            marker = fence_match.group(1)
+            marker_len = len(marker)
+            if fence is None:
+                fence = marker[0]
+                fence_len = marker_len
+            elif marker[0] == fence and marker_len >= fence_len:
+                fence = None
+                fence_len = 0
+        running += line_len
+    return False
 
 
 def _remove_spaces_from_empty_lines(text):

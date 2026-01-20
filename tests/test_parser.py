@@ -110,6 +110,14 @@ class TestParser(ParserTestCase):
         tree = self._parse(data)
         self.assertEqual('pt', tree.print_all())
 
+    def test_reference_definition_inside_long_fence_is_text(self):
+        data = """````
+[id]: https://example.com
+[link][id]
+````"""
+        tree = self._parse(data)
+        self.assertEqual('pt', tree.print_all())
+
     def test_softbreak_preserves_space(self):
         actual = self._parse('hello\nworld')
         self.assertEqual('hello world', actual.nodes[0].nodes[0].text)
@@ -176,6 +184,24 @@ class TestZendeskParser(ParserTestCase):
 content
 </callout> outro"""
         self._run_and_assert(fixture, 'ptC1tptpt')
+
+    def test_zendesk_tags_inside_fenced_code_are_text(self):
+        fixture = """```
+<callout>
+# title
+content
+</callout>
+<steps>
+1. one
+</steps>
+<tabs>
+# tab
+content
+</tabs>
+```"""
+        tree = self._parse(fixture)
+        self.assertEqual('pt', tree.print_all())
+        self.assertFalse(any(node.name in {'callout', 'steps', 'tabs'} for node in tree.nodes))
 
     def test_steps(self):
         steps_fixture = """
