@@ -76,6 +76,10 @@ class TestParser(ParserTestCase):
         actual = self._parse('[use `foo`](url)')
         self.assertEqual('[use `foo`](url)', actual.nodes[0].nodes[0].text)
 
+    def test_link_label_with_strong_preserves_markers(self):
+        actual = self._parse('[**bold**](url)')
+        self.assertEqual('[**bold**](url)', actual.nodes[0].nodes[0].text)
+
     def test_link_title_preserved(self):
         actual = self._parse('[label](https://example.com "Title Here")')
         self.assertEqual('[label](https://example.com "Title Here")', actual.nodes[0].nodes[0].text)
@@ -90,6 +94,13 @@ class TestParser(ParserTestCase):
         link = next(node for node in tree.nodes[0].nodes if node.name == 'link')
         self.assertEqual('[API][id]', link.text)
         self.assertEqual('[id]: https://example.com', tree.nodes[1].nodes[0].text)
+
+    def test_reference_links_with_whitespace_and_empty_id(self):
+        data = 'See [API][] and [Ref] [id].\n\n[API]: https://example.com\n[id]: https://example.com'
+        tree = self._parse(data)
+        link_texts = [node.text for node in tree.nodes[0].nodes if node.name == 'link']
+        self.assertIn('[API][]', link_texts)
+        self.assertIn('[Ref] [id]', link_texts)
 
     def test_reference_definition_inside_fence_is_text(self):
         data = """```

@@ -11,9 +11,14 @@ from .model import (Html, Image, Link, List, ListItem, NewLine, Paragraph, Root,
 
 _BLOCK_TAGS = {tag.lower() for tag in block_parser.BLOCK_TAGS}
 _HEADING_LINE_RE = re.compile(r'^(\s*)(#{1,6})(?!#)(?=\S)')
-_REF_LINK_OR_IMAGE_RE = re.compile(r'!?\[[^\]]+\]\[[^\]]+\]')
+_REF_LINK_OR_IMAGE_RE = re.compile(r'!?\[[^\]]+\]\s*\[[^\]]*\]')
 _REF_DEF_LINE_RE = re.compile(r'^\s{0,3}\[[^\]]+\]:\s+\S+')
 _FENCE_RE = re.compile(r'^\s*(```|~~~)')
+_INLINE_MARKERS = {
+    'strong': '**',
+    'emphasis': '*',
+    'strikethrough': '~~',
+}
 
 
 class MdParser:
@@ -134,6 +139,14 @@ class MdParser:
                 url = attrs.get('url', '')
                 title = attrs.get('title')
                 nodes.append(Image(_format_image_markup(alt, url, title)))
+            elif token_type in _INLINE_MARKERS:
+                flush_buffer()
+                marker = _INLINE_MARKERS[token_type]
+                _append_text(nodes, marker)
+                children = token.get('children', [])
+                if children:
+                    nodes.extend(self._convert_inline_tokens(children))
+                _append_text(nodes, marker)
             else:
                 flush_buffer()
                 children = token.get('children', [])
@@ -155,6 +168,10 @@ class MdParser:
                 parts.append(token.get('raw') or token.get('text') or '')
             elif token_type == 'codespan':
                 parts.append(f"`{token.get('raw') or token.get('text') or ''}`")
+            elif token_type in _INLINE_MARKERS:
+                marker = _INLINE_MARKERS[token_type]
+                inner = self._flatten_inline_text(token.get('children', []))
+                parts.append(f'{marker}{inner}{marker}')
             elif token_type in {'linebreak', 'softbreak'}:
                 parts.append(' ')
             else:
