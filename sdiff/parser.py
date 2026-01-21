@@ -164,52 +164,87 @@ class MdParser:
                 self._split_reference_links(buffer, nodes)
                 buffer = ''
 
+        handlers = {
+            'text': self._handle_inline_text,
+            'inline_html': self._handle_inline_text,
+            'block_html': self._handle_inline_text,
+            'codespan': self._handle_inline_codespan,
+            'softbreak': self._handle_inline_softbreak,
+            'linebreak': self._handle_inline_linebreak,
+            'link': self._handle_inline_link,
+            'image': self._handle_inline_image,
+            'strong': self._handle_inline_marker,
+            'emphasis': self._handle_inline_marker,
+            'strikethrough': self._handle_inline_marker,
+        }
+
         for token in tokens:
             token_type = token.get('type')
-            if token_type in {'text', 'inline_html', 'block_html'}:
-                raw = token.get('raw', '')
-                buffer += self._reference_definitions.get(raw, raw)
-            elif token_type == 'codespan':
-                buffer += f"`{token.get('raw') or token.get('text') or ''}`"
-            elif token_type == 'softbreak':
-                buffer += ' '
-            elif token_type == 'linebreak':
-                flush_buffer()
-                nodes.append(NewLine())
-            elif token_type == 'link':
-                flush_buffer()
-                text = self._flatten_inline_text(token.get('children', []))
-                attrs = token.get('attrs', {})
-                url = attrs.get('url', '')
-                title = attrs.get('title')
-                nodes.append(Link(_format_link_markup(text, url, title)))
-            elif token_type == 'image':
-                flush_buffer()
-                alt = token.get('attrs', {}).get('alt') or self._flatten_inline_text(token.get('children', []))
-                attrs = token.get('attrs', {})
-                url = attrs.get('url', '')
-                title = attrs.get('title')
-                nodes.append(Image(_format_image_markup(alt, url, title)))
-            elif token_type in _INLINE_MARKERS:
-                flush_buffer()
-                marker = _INLINE_MARKERS[token_type]
-                _append_text(nodes, marker)
-                children = token.get('children', [])
-                if children:
-                    nodes.extend(self._convert_inline_tokens(children))
-                _append_text(nodes, marker)
+            handler = handlers.get(token_type)
+            if handler:
+                buffer = handler(token, nodes, buffer, flush_buffer)
             else:
-                flush_buffer()
-                children = token.get('children', [])
-                if children:
-                    nodes.extend(self._convert_inline_tokens(children))
-                else:
-                    raw = token.get('raw') or token.get('text') or ''
-                    if raw.strip():
-                        _append_text(nodes, mistune.escape(raw))
+                buffer = self._handle_inline_other(token, nodes, buffer, flush_buffer)
 
         flush_buffer()
         return nodes
+
+    def _handle_inline_text(self, token, nodes, buffer, flush_buffer):
+        raw = token.get('raw', '')
+        buffer += self._reference_definitions.get(raw, raw)
+        return buffer
+
+    def _handle_inline_codespan(self, token, nodes, buffer, flush_buffer):
+        buffer += f"`{token.get('raw') or token.get('text') or ''}`"
+        return buffer
+
+    def _handle_inline_softbreak(self, token, nodes, buffer, flush_buffer):
+        buffer += ' '
+        return buffer
+
+    def _handle_inline_linebreak(self, token, nodes, buffer, flush_buffer):
+        flush_buffer()
+        nodes.append(NewLine())
+        return buffer
+
+    def _handle_inline_link(self, token, nodes, buffer, flush_buffer):
+        flush_buffer()
+        text = self._flatten_inline_text(token.get('children', []))
+        attrs = token.get('attrs', {})
+        url = attrs.get('url', '')
+        title = attrs.get('title')
+        nodes.append(Link(_format_link_markup(text, url, title)))
+        return buffer
+
+    def _handle_inline_image(self, token, nodes, buffer, flush_buffer):
+        flush_buffer()
+        alt = token.get('attrs', {}).get('alt') or self._flatten_inline_text(token.get('children', []))
+        attrs = token.get('attrs', {})
+        url = attrs.get('url', '')
+        title = attrs.get('title')
+        nodes.append(Image(_format_image_markup(alt, url, title)))
+        return buffer
+
+    def _handle_inline_marker(self, token, nodes, buffer, flush_buffer):
+        flush_buffer()
+        marker = _INLINE_MARKERS[token.get('type')]
+        _append_text(nodes, marker)
+        children = token.get('children', [])
+        if children:
+            nodes.extend(self._convert_inline_tokens(children))
+        _append_text(nodes, marker)
+        return buffer
+
+    def _handle_inline_other(self, token, nodes, buffer, flush_buffer):
+        flush_buffer()
+        children = token.get('children', [])
+        if children:
+            nodes.extend(self._convert_inline_tokens(children))
+        else:
+            raw = token.get('raw') or token.get('text') or ''
+            if raw.strip():
+                _append_text(nodes, mistune.escape(raw))
+        return buffer
 
     def _flatten_inline_text(self, tokens: Iterable[dict]):
         parts = []
