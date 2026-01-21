@@ -46,7 +46,9 @@ class TestSdiff(TestCase):
     def test_missing_link_is_reported(self):
         left = 'text [Link](http://example.com)'
         right = 'text'
-        _, _, errors = sdiff.diff(left, right)
+        tree1 = sdiff.parse(left)
+        tree2 = sdiff.parse(right)
+        _, _, errors = sdiff.diff_links(tree1, tree2)
         self.assertTrue(any(error.node.name == 'link' for error in errors))
 
     def test_extra_paragraph_has_paragraph_error(self):

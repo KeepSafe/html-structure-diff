@@ -44,9 +44,7 @@ def _diff(tree1, tree2, include_symbols=None, exclude_symbols=None):
 
 
 def diff_links(tree1, tree2):
-    tree1, tree2, errors = _diff(tree1, tree2, exclude_symbols=['t', 'i'])
-    link_errors = [error for error in errors if error.node.symbol == 'a']
-    return tree1, tree2, link_errors
+    return _diff(tree1, tree2, include_symbols=['p', 'h', 'l', 'a'])
 
 
 def diff_struct(tree1, tree2):

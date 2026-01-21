@@ -263,7 +263,10 @@ class TestReplaceLines(TestCase):
 
 
 class DummyParser:
-    def parse(self, text):
+    last_text = None
+
+    def parse(self, text, rules=None):
+        DummyParser.last_text = text
         return [Paragraph([Text(text)])]
 
 
@@ -272,3 +275,13 @@ class TestParseWrapper(TestCase):
         tree = parser.parse('hello', parser_cls=DummyParser)
         self.assertIsInstance(tree, Root)
         self.assertEqual('pt', tree.print_all())
+
+    def test_custom_parser_input_not_mutated_by_ref_defs(self):
+        data = 'See [API][id].\n\n[id]: https://example.com'
+        parser.parse(data, parser_cls=DummyParser)
+        self.assertIn('[id]: https://example.com', DummyParser.last_text)
+
+    def test_mdparser_parse_accepts_rules_argument(self):
+        md_parser = MdParser()
+        nodes = md_parser.parse('1. one', MdParser.list_rules)
+        self.assertIsInstance(nodes, list)

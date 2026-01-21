@@ -19,6 +19,10 @@ class TestLinks(TestCase):
         _, _, actual = diff_links(trees.pa(), trees.paa())
         self.assertEqual('dummy link 2', actual[0].node.text)
 
+    def test_non_link_structure_diffs_returned(self):
+        _, _, errors = diff_links(trees.r2t(), trees.pt())
+        self.assertTrue(any(error.node.name == 'header' for error in errors))
+
 
 class TestEqual(TestCase):
 

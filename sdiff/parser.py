@@ -22,6 +22,8 @@ _INLINE_MARKERS = {
 
 
 class MdParser:
+    list_rules = None
+
     @classmethod
     def get_lexer(cls):
         return cls()
@@ -30,9 +32,9 @@ class MdParser:
         self._markdown = mistune.create_markdown(renderer='ast')
         self._reference_definitions = {}
 
-    def parse(self, text):
+    def parse(self, text, rules=None):
         tokens = self._markdown(text)
-        return Root(self._convert_block_tokens(tokens))
+        return self._convert_block_tokens(tokens)
 
     def _set_reference_definitions(self, definitions):
         self._reference_definitions = definitions
@@ -250,9 +252,9 @@ class ZendeskHelpMdParser(MdParser):
     _STEPS_PATTERN = re.compile(r'(?s)<steps>(?P<content>.*?)</steps>')
     _TABS_PATTERN = re.compile(r'(?s)<tabs>(?P<content>.*?)</tabs>')
 
-    def parse(self, text):
+    def parse(self, text, rules=None):
         nodes = self._parse_nodes(text)
-        return Root(nodes)
+        return nodes
 
     def _parse_nodes(self, text: str):
         nodes = []
@@ -425,9 +427,9 @@ def _remove_ltr_rtl_marks(text):
 def parse(text, parser_cls: type[MdParser] = MdParser):
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
-    text, reference_definitions = _extract_reference_definitions(text)
     parser = parser_cls()
     if hasattr(parser, '_set_reference_definitions'):
+        text, reference_definitions = _extract_reference_definitions(text)
         parser._set_reference_definitions(reference_definitions)
     result = parser.parse(text)
     if isinstance(result, list):
