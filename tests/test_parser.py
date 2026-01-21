@@ -95,6 +95,12 @@ class TestParser(ParserTestCase):
         self.assertEqual('[API][id]', link.text)
         self.assertEqual('[id]: https://example.com', tree.nodes[1].nodes[0].text)
 
+    def test_reference_definition_inside_list_item_preserved(self):
+        data = '- item\n  [id]: https://example.com'
+        tree = self._parse(data)
+        list_item = tree.nodes[0].nodes[0]
+        self.assertIn('[id]: https://example.com', list_item.nodes[0].text)
+
     def test_reference_links_with_whitespace_and_empty_id(self):
         data = 'See [API][] and [Ref] [id].\n\n[API]: https://example.com\n[id]: https://example.com'
         tree = self._parse(data)
@@ -121,6 +127,14 @@ class TestParser(ParserTestCase):
     def test_softbreak_preserves_space(self):
         actual = self._parse('hello\nworld')
         self.assertEqual('hello world', actual.nodes[0].nodes[0].text)
+
+    def test_block_quote_preserves_marker(self):
+        actual = self._parse('> quote')
+        self.assertEqual('&gt; quote', actual.nodes[0].nodes[0].text)
+
+    def test_fenced_code_preserves_fences(self):
+        actual = self._parse('```\ncode\n```')
+        self.assertEqual('```\ncode\n```', actual.nodes[0].nodes[0].text)
 
     def test_ordered_list_parses_as_ordered(self):
         tree = self._parse('1. one\n2. two')

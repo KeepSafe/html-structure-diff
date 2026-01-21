@@ -72,7 +72,11 @@ class MdParser:
             return [self._convert_paragraph_or_heading(token.get('children', []))]
         if token_type == 'block_html':
             return self._convert_block_html(token)
-        if token_type in {'thematic_break', 'block_quote', 'block_code', 'fenced_code'}:
+        if token_type == 'block_quote':
+            return self._convert_block_quote(token)
+        if token_type == 'block_code':
+            return self._convert_block_code(token)
+        if token_type == 'thematic_break':
             return self._convert_passthrough_block(token)
         return self._convert_passthrough_block(token)
 
@@ -109,6 +113,37 @@ class MdParser:
             return [Paragraph([Text(mistune.escape(raw))])]
         return []
 
+    def _convert_block_quote(self, token):
+        children = token.get('children', [])
+        if not children:
+            return []
+        content = self._render_inline_children(children)
+        if not content.strip():
+            return []
+        lines = content.splitlines()
+        quoted = '\n'.join([f'> {line}' if line.strip() else '>' for line in lines])
+        return [Paragraph([Text(mistune.escape(quoted))])]
+
+    def _convert_block_code(self, token):
+        raw = token.get('raw') or ''
+        marker = token.get('marker') or '```'
+        fence = marker if marker else '```'
+        content = raw.rstrip('\n')
+        code_block = f'{fence}\n{content}\n{fence}'
+        return [Paragraph([Text(mistune.escape(code_block))])]
+
+    def _render_inline_children(self, children):
+        parts = []
+        for child in children:
+            child_type = child.get('type')
+            if child_type in {'paragraph', 'block_text'}:
+                parts.append(self._flatten_inline_text(child.get('children', [])))
+            else:
+                raw = child.get('raw') or child.get('text') or ''
+                if raw:
+                    parts.append(raw)
+        return '\n'.join([part for part in parts if part is not None])
+
     def _convert_list_item(self, token):
         item = ListItem()
         for child in token.get('children', []):
@@ -132,7 +167,8 @@ class MdParser:
         for token in tokens:
             token_type = token.get('type')
             if token_type in {'text', 'inline_html', 'block_html'}:
-                buffer += token.get('raw', '')
+                raw = token.get('raw', '')
+                buffer += self._reference_definitions.get(raw, raw)
             elif token_type == 'codespan':
                 buffer += f"`{token.get('raw') or token.get('text') or ''}`"
             elif token_type == 'softbreak':
@@ -180,7 +216,8 @@ class MdParser:
         for token in tokens:
             token_type = token.get('type')
             if token_type in {'text', 'inline_html', 'block_html'}:
-                parts.append(token.get('raw') or token.get('text') or '')
+                raw = token.get('raw') or token.get('text') or ''
+                parts.append(self._reference_definitions.get(raw, raw))
             elif token_type == 'codespan':
                 parts.append(f"`{token.get('raw') or token.get('text') or ''}`")
             elif token_type in _INLINE_MARKERS:
@@ -207,6 +244,9 @@ class MdParser:
         return Paragraph(self._convert_inline_tokens(inline_tokens))
 
     def _convert_list_block_nodes(self, inline_tokens: Iterable[dict]):
+        ref_text = self._reference_definition_text(inline_tokens)
+        if ref_text is not None:
+            return [Text(ref_text)]
         heading = self._heading_from_inline(inline_tokens)
         if heading:
             return [heading]
