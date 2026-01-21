@@ -14,6 +14,8 @@ The core library lives in `sdiff/` (parser, comparer, renderer, and models). Tes
 - `make clean` removes build artifacts and the venv.
 - `make hooks` installs Husky git hooks (requires Node/npm; `make dev` runs this).
 
+Lint parity: CI and the Husky pre-commit hook both run the same checks as `make flake` (autopep8 check + flake8). Run `make flake` or `make test` locally to mirror CI.
+
 Example flow:
 ```sh
 make dev
