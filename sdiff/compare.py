@@ -44,8 +44,10 @@ def _diff(tree1, tree2, include_symbols=None, exclude_symbols=None):
 
 
 def diff_links(tree1, tree2):
+    """Diff only link-relevant structure (paragraphs/headers/lists/links)."""
     return _diff(tree1, tree2, include_symbols=['p', 'h', 'l', 'a'])
 
 
 def diff_struct(tree1, tree2):
+    """Diff overall structure, ignoring link and image content."""
     return _diff(tree1, tree2, exclude_symbols=['a', 'i'])

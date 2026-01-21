@@ -4,6 +4,17 @@ from .compare import diff_struct, diff_links  # noqa
 
 
 def diff(md1, md2, renderer=TextRenderer(), parser_cls: type[MdParser] = MdParser):
+    """Compare two Markdown strings by structure and return rendered outputs + errors.
+
+    Args:
+        md1: Left Markdown string.
+        md2: Right Markdown string.
+        renderer: Renderer instance used to format the output (TextRenderer by default).
+        parser_cls: Parser class to use (MdParser by default).
+
+    Returns:
+        (rendered_left, rendered_right, errors)
+    """
     tree1 = parse(md1, parser_cls)
     tree2 = parse(md2, parser_cls)
 

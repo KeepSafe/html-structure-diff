@@ -22,6 +22,10 @@ _INLINE_MARKERS = {
 
 
 class MdParser:
+    """Markdown parser that builds a lightweight structural tree.
+
+    Uses Mistune AST tokens to build sdiff Node objects.
+    """
     list_rules = None
 
     @classmethod
@@ -33,6 +37,15 @@ class MdParser:
         self._reference_definitions = {}
 
     def parse(self, text, rules=None):
+        """Parse Markdown text into a list of Node objects.
+
+        Args:
+            text: Markdown string.
+            rules: Optional rules argument kept for compatibility.
+
+        Returns:
+            list[Node]
+        """
         tokens = self._markdown(text)
         return self._convert_block_tokens(tokens)
 
@@ -253,6 +266,7 @@ class ZendeskHelpMdParser(MdParser):
     _TABS_PATTERN = re.compile(r'(?s)<tabs>(?P<content>.*?)</tabs>')
 
     def parse(self, text, rules=None):
+        """Parse Markdown with Zendesk tag support into a list of Node objects."""
         nodes = self._parse_nodes(text)
         return nodes
 
@@ -425,6 +439,7 @@ def _remove_ltr_rtl_marks(text):
 
 
 def parse(text, parser_cls: type[MdParser] = MdParser):
+    """Parse Markdown into a Root node using the given parser class."""
     text = _remove_spaces_from_empty_lines(text)
     text = _remove_ltr_rtl_marks(text)
     parser = parser_cls()
