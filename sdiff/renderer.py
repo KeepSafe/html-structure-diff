@@ -2,6 +2,7 @@ from sdiff.model import Root, Node
 
 
 class HtmlRenderer:
+    """Render a tree to HTML, marking inserts/deletes with ins/del tags."""
 
     def render(self, tree: Root):
         result = tree.original(self)
@@ -16,6 +17,7 @@ class HtmlRenderer:
 
 
 class TextRenderer:
+    """Render a tree back to plain text/Markdown-like output."""
 
     def render(self, tree: Root):
         result = tree.original(self)

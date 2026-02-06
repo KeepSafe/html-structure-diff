@@ -1,1 +1,1 @@
-mistune==0.8.1
+mistune==3.2.0

@@ -10,7 +10,7 @@ def read(f):
 
 
 install_requires = [
-    'mistune <= 1',
+    'mistune==3.2.0',
 ]
 
 tests_require = [
@@ -41,7 +41,6 @@ setup(name='sdiff',
       package_data={},
       namespace_packages=[],
       install_requires=install_requires,
-      tests_require=tests_require,
       extras_require={
           'tests': tests_require,
           'devtools': devtools_require,
