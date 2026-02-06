@@ -1,6 +1,7 @@
 from unittest import TestCase
 from sdiff import parser, MdParser, ZendeskHelpMdParser
 from sdiff.model import Paragraph, Root, Text, ZendeskHelpSteps
+from sdiff.renderer import TextRenderer
 
 
 class ParserTestCase(TestCase):
@@ -86,6 +87,33 @@ class TestParser(ParserTestCase):
 
     def test_link_wrapped_in_text(self):
         self._run_and_assert('some text [link](url) new text', 'ptat')
+
+    def test_link_with_trailing_text_does_not_duplicate_buffer(self):
+        actual = self._parse('some text [link](url) new text')
+        paragraph = actual.nodes[0]
+        self.assertEqual(['text', 'link', 'text'], [node.name for node in paragraph.nodes])
+        self.assertEqual('some text ', paragraph.nodes[0].text)
+        self.assertEqual('[link](url)', paragraph.nodes[1].text)
+        self.assertEqual(' new text', paragraph.nodes[2].text)
+
+    def test_image_with_trailing_text_does_not_duplicate_buffer(self):
+        actual = self._parse('some ![alt](url) new')
+        paragraph = actual.nodes[0]
+        self.assertEqual(['text', 'image', 'text'], [node.name for node in paragraph.nodes])
+        self.assertEqual('some ', paragraph.nodes[0].text)
+        self.assertEqual('![alt](url)', paragraph.nodes[1].text)
+        self.assertEqual(' new', paragraph.nodes[2].text)
+
+    def test_inline_marker_does_not_duplicate_buffer(self):
+        actual = self._parse('some **bold** text')
+        self.assertEqual('some **bold** text', TextRenderer().render(actual))
+
+    def test_inline_linebreak_does_not_duplicate_buffer(self):
+        actual = self._parse('a\\\nb')
+        paragraph = actual.nodes[0]
+        self.assertEqual(['text', 'new-line', 'text'], [node.name for node in paragraph.nodes])
+        self.assertEqual('a', paragraph.nodes[0].text)
+        self.assertEqual('b', paragraph.nodes[2].text)
 
     def test_text_before_link_not_duplicated(self):
         actual = self._parse('some text and [link](url)')
