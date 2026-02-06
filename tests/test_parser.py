@@ -69,8 +69,29 @@ class TestParser(ParserTestCase):
         actual = self._parse('### heading')
         self.assertEqual('heading', actual.nodes[0].nodes[0].text)
 
+    def test_heading_without_space_followed_by_text_parses_as_header(self):
+        actual = self._parse('##Heading\ntext')
+        self.assertEqual('2tpt', actual.print_all())
+
+    def test_heading_without_space_with_link_parses_as_header(self):
+        actual = self._parse('##[Verify email]({{url}})\ntext')
+        self.assertEqual('header', actual.nodes[0].name)
+        self.assertEqual(2, actual.nodes[0].level)
+        self.assertEqual('link', actual.nodes[0].nodes[0].name)
+        self.assertEqual('[Verify email]({{url}})', actual.nodes[0].nodes[0].text)
+
+    def test_heading_without_space_in_list_item_followed_by_text(self):
+        actual = self._parse('1. ##Heading\n   text')
+        self.assertEqual('lm2tt', actual.print_all())
+
     def test_link_wrapped_in_text(self):
         self._run_and_assert('some text [link](url) new text', 'ptat')
+
+    def test_text_before_link_not_duplicated(self):
+        actual = self._parse('some text and [link](url)')
+        paragraph = actual.nodes[0]
+        self.assertEqual(['text', 'link'], [node.name for node in paragraph.nodes])
+        self.assertEqual(['some text and '], [node.text for node in paragraph.nodes if node.name == 'text'])
 
     def test_link_label_with_codespan(self):
         actual = self._parse('[use `foo`](url)')
@@ -99,7 +120,8 @@ class TestParser(ParserTestCase):
         data = '- item\n  [id]: https://example.com'
         tree = self._parse(data)
         list_item = tree.nodes[0].nodes[0]
-        self.assertIn('[id]: https://example.com', list_item.nodes[0].text)
+        self.assertEqual('item', list_item.nodes[0].text)
+        self.assertEqual('[id]: https://example.com', tree.nodes[1].nodes[0].text)
 
     def test_reference_links_with_whitespace_and_empty_id(self):
         data = 'See [API][] and [Ref] [id].\n\n[API]: https://example.com\n[id]: https://example.com'
@@ -114,7 +136,7 @@ class TestParser(ParserTestCase):
 [link][id]
 ```"""
         tree = self._parse(data)
-        self.assertEqual('pt', tree.print_all())
+        self.assertEqual('ptttptattt', tree.print_all())
 
     def test_reference_definition_inside_long_fence_is_text(self):
         data = """````
@@ -122,7 +144,7 @@ class TestParser(ParserTestCase):
 [link][id]
 ````"""
         tree = self._parse(data)
-        self.assertEqual('pt', tree.print_all())
+        self.assertEqual('pttttptatttt', tree.print_all())
 
     def test_softbreak_preserves_space(self):
         actual = self._parse('hello\nworld')
@@ -134,17 +156,39 @@ class TestParser(ParserTestCase):
 
     def test_fenced_code_preserves_fences(self):
         actual = self._parse('```\ncode\n```')
-        self.assertEqual('```\ncode\n```', actual.nodes[0].nodes[0].text)
+        self.assertEqual('ptttttt', actual.print_all())
+        text = ''.join(node.text for node in actual.nodes[0].nodes)
+        self.assertTrue(text.startswith('```'))
+        self.assertTrue(text.endswith('```'))
 
     def test_ordered_list_parses_as_ordered(self):
         tree = self._parse('1. one\n2. two')
         list_node = tree.nodes[0]
         self.assertTrue(list_node.ordered)
 
+    def test_ordered_list_marker_other_than_1_interrupts_paragraph(self):
+        self._run_and_assert('para\n2. item\n', 'ptlmt')
+
+    def test_list_item_allows_unindented_heading_lazy_continuation(self):
+        tree = self._parse('* a\n###### b\n')
+        self.assertEqual(1, len(tree.nodes))
+        self.assertEqual('list', tree.nodes[0].name)
+        item = tree.nodes[0].nodes[0]
+        self.assertEqual(['text', 'header'], [node.name for node in item.nodes])
+        self.assertEqual('a', item.nodes[0].text)
+        self.assertEqual(6, item.nodes[1].level)
+        self.assertEqual('b', item.nodes[1].nodes[0].text)
+
     def test_unordered_list_parses_as_unordered(self):
         tree = self._parse('- one\n- two')
         list_node = tree.nodes[0]
         self.assertFalse(list_node.ordered)
+
+    def test_double_blank_lines_between_list_items_nests_next_list(self):
+        self._run_and_assert('* a\n\n\n* b\n', 'lmtlmt')
+
+    def test_double_blank_lines_between_ordered_list_items_nests_next_list(self):
+        self._run_and_assert('1. a\n\n\n1. b\n', 'lmtlmt')
 
 
 class TestZendeskParser(ParserTestCase):
@@ -181,6 +225,22 @@ class TestZendeskParser(ParserTestCase):
         actual = self._parse(fixture)
         self.assertNotEqual(actual.nodes[0].name, 'callout')
 
+    def test_callout_invalid_style_does_not_swallow_trailing_closing_tag(self):
+        fixture = '<callout invalid>\n# title\ncontent\n</callout>\n</callout>\n'
+        self._run_and_assert(fixture, 'xpt')
+
+    def test_callout_tags_inside_list_item_are_text_and_allow_headings(self):
+        fixture = '1. item\n<callout>\n# title\ncontent\n</callout>\n'
+        tree = self._parse(fixture)
+        self.assertEqual(1, len(tree.nodes))
+        self.assertEqual('list', tree.nodes[0].name)
+        item = tree.nodes[0].nodes[0]
+        self.assertEqual(['text', 'text', 'header', 'text', 'text'], [node.name for node in item.nodes])
+        self.assertEqual('&lt;callout&gt;', item.nodes[1].text)
+        self.assertEqual(1, item.nodes[2].level)
+        self.assertEqual('title', item.nodes[2].nodes[0].text)
+        self.assertEqual('&lt;/callout&gt;', item.nodes[-1].text)
+
     def test_tabs(self):
         fixture = """
         <tabs>
@@ -192,12 +252,12 @@ class TestZendeskParser(ParserTestCase):
         """
         self._run_and_assert(fixture, 'T1tpt1tpt')
 
-    def test_inline_callout_is_structural(self):
+    def test_inline_callout_is_not_structural(self):
         fixture = """intro <callout>
 # title
 content
 </callout> outro"""
-        self._run_and_assert(fixture, 'ptC1tptpt')
+        self._run_and_assert(fixture, 'pt1tpt')
 
     def test_zendesk_tags_inside_fenced_code_are_text(self):
         fixture = """```
@@ -214,8 +274,25 @@ content
 </tabs>
 ```"""
         tree = self._parse(fixture)
-        self.assertEqual('pt', tree.print_all())
+        self.assertEqual('ptttxxxpttt', tree.print_all())
         self.assertFalse(any(node.name in {'callout', 'steps', 'tabs'} for node in tree.nodes))
+
+    def test_zendesk_tags_after_fenced_code_are_parsed(self):
+        fixture = """```
+<callout>
+# title
+content
+</callout>
+```
+
+<callout>
+# title
+content
+</callout>
+"""
+        tree = self._parse(fixture)
+        self.assertTrue(any(node.name == 'callout' for node in tree.nodes))
+        self.assertEqual(1, tree.print_all().count('C'))
 
     def test_steps(self):
         steps_fixture = """

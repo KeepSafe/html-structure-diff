@@ -63,6 +63,18 @@ class TestSdiff(TestCase):
         _, _, errors = sdiff.diff(left, right)
         self.assertEqual([], errors)
 
+    def test_heading_without_space_matches_heading_with_space(self):
+        left = '##Heading\ntext'
+        right = '## Heading\ntext'
+        _, _, errors = sdiff.diff(left, right)
+        self.assertEqual([], errors)
+
+    def test_list_heading_without_space_matches_heading_with_space(self):
+        left = '1. ##Heading\n   text'
+        right = '1. ## Heading\n   text'
+        _, _, errors = sdiff.diff(left, right)
+        self.assertEqual([], errors)
+
     def test_reference_definition_missing_is_reported(self):
         left = 'See [API][id].\n\n[id]: https://example.com'
         right = 'See [API][id].'
@@ -77,4 +89,23 @@ code sample
 different code sample
 ```"""
         _, _, errors = sdiff.diff(left, right)
+        self.assertEqual([], errors)
+
+    def test_invalid_callout_followed_by_fence_does_not_depend_on_blank_line(self):
+        left = """<callout invalid>
+# title
+content
+</callout>
+
+```
+code
+```"""
+        right = """<callout invalid>
+# title
+content
+</callout>
+```
+code
+```"""
+        _, _, errors = sdiff.diff(left, right, parser_cls=ZendeskHelpMdParser)
         self.assertEqual([], errors)
