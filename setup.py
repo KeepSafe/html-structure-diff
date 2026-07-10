@@ -10,7 +10,7 @@ def read(f):
 
 
 install_requires = [
-    'mistune <= 1',
+    'mistune <= 3.3.0',
 ]
 
 tests_require = [
