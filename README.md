@@ -26,7 +26,11 @@ make lint
 make test
 make fixture-smoke
 make depcheck
+make requirements
 ```
+
+`make requirements` uses `pip-compile` to regenerate `requirements.txt` and `requirements-dev.txt` from
+`pyproject.toml`.
 
 Exact parser, renderer, and diff behavior is protected by
 `tests/fixtures/golden/python311_compatibility.json`. Migration scope and proof results are recorded in

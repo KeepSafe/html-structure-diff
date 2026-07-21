@@ -7,6 +7,7 @@ PIP=venv/bin/pip
 COVERAGE=venv/bin/coverage
 PYTEST=venv/bin/pytest
 FLAKE=venv/bin/flake8
+PIP_COMPILE=venv/bin/pip-compile
 PYUPGRADE=venv/bin/pyupgrade
 RG=rg
 
@@ -29,7 +30,7 @@ build-dir:
 
 env:
 	test -d venv || $(BOOTSTRAP_PYTHON) -m venv venv
-	$(PIP) install -U pip "setuptools>=82.0.1" "wheel>=0.47.0"
+	$(PIP) install -U "pip<26" "setuptools>=82.0.1" "wheel>=0.47.0"
 	$(PIP) install -e .
 
 dev: env
@@ -48,7 +49,7 @@ ci-env:
 		echo "No valid cached venv found, creating a fresh venv"; \
 		if [ -d "venv" ]; then rm -rf venv; fi; \
 		$(BOOTSTRAP_PYTHON) -m venv venv; \
-		$(PIP) install -U pip "setuptools>=82.0.1" "wheel>=0.47.0"; \
+		$(PIP) install -U "pip<26" "setuptools>=82.0.1" "wheel>=0.47.0"; \
 	fi
 
 ci-dev-install: ci-env
@@ -87,6 +88,10 @@ smoke: fixture-smoke import-smoke
 depcheck:
 	$(PIP) check
 
+requirements: dev
+	$(PIP_COMPILE) --annotation-style=line --output-file=requirements.txt pyproject.toml
+	$(PIP_COMPILE) --annotation-style=line --output-file=requirements-dev.txt --extra=dev pyproject.toml
+
 pyupgrade:
 	$(PYUPGRADE) --py311-plus --keep-percent-format $(PYTHON_FILES)
 
@@ -117,4 +122,5 @@ clean:
 	rm -rf build coverage dist sdiff.egg-info venv
 
 .PHONY: build-dir check-msgpack ci-dev-install ci-env clean cov cover coverage depcheck dev env fixture-smoke \
-	flake hooks import-smoke install lint package publish pyupgrade smoke test test-only unhooks update vtest vtests
+	flake hooks import-smoke install lint package publish pyupgrade requirements smoke test test-only unhooks update \
+	vtest vtests
