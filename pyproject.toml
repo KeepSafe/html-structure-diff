@@ -28,7 +28,6 @@ dev = [
     "coverage==7.6.1",
     "flake8==7.1.1",
     "flake8-pyproject==1.2.4",
-    "pipdeptree==2.35.2",
     "pytest==9.1.1",
     "pyupgrade==3.21.2",
     "twine==6.2.0",

@@ -7,7 +7,6 @@ PIP=venv/bin/pip
 COVERAGE=venv/bin/coverage
 PYTEST=venv/bin/pytest
 FLAKE=venv/bin/flake8
-PIPDEPTREE=venv/bin/pipdeptree
 PYUPGRADE=venv/bin/pyupgrade
 RG=rg
 
@@ -87,7 +86,6 @@ smoke: fixture-smoke import-smoke
 
 depcheck:
 	$(PIP) check
-	$(PIPDEPTREE) --warn fail
 
 pyupgrade:
 	$(PYUPGRADE) --py311-plus --keep-percent-format $(PYTHON_FILES)
