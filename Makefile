@@ -1,5 +1,7 @@
 # Package development and verification tasks (UNIX only).
 
+PYTHON_VERSION=3.11.13
+BOOTSTRAP_PYTHON?=python3.11
 PYTHON=venv/bin/python
 PIP=venv/bin/pip
 COVERAGE=venv/bin/coverage
@@ -27,7 +29,7 @@ build-dir:
 	mkdir -p build/test build/coverage
 
 env:
-	test -d venv || python3.11 -m venv venv
+	test -d venv || $(BOOTSTRAP_PYTHON) -m venv venv
 	$(PIP) install -U pip "setuptools>=82.0.1" "wheel>=0.47.0"
 	$(PIP) install -e .
 
@@ -40,12 +42,13 @@ update:
 install: env
 
 ci-env:
-	@if [ -d "venv" ] && $(PIP) --version >/dev/null 2>&1; then \
+	@if [ -d "venv" ] && $(PIP) --version >/dev/null 2>&1 \
+		&& $(PYTHON) -c 'import platform, sys; sys.exit(platform.python_version() != "$(PYTHON_VERSION)")'; then \
 		echo "Reusing cached CI venv, no need to recreate when it has not changed"; \
 	else \
 		echo "No valid cached venv found, creating a fresh venv"; \
 		if [ -d "venv" ]; then rm -rf venv; fi; \
-		python3.11 -m venv venv; \
+		$(BOOTSTRAP_PYTHON) -m venv venv; \
 		$(PIP) install -U pip "setuptools>=82.0.1" "wheel>=0.47.0"; \
 	fi
 
