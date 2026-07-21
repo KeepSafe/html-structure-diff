@@ -1,60 +1,119 @@
-# Some simple testing tasks (sorry, UNIX only).
+# Package development and verification tasks (UNIX only).
 
-PYTHON=venv/bin/python3
+PYTHON=venv/bin/python
 PIP=venv/bin/pip
 COVERAGE=venv/bin/coverage
-TEST_RUNNER=venv/bin/pytest
-TEST_RUNNER_FLAGS=-s --durations=3 --durations-min=0.005
+PYTEST=venv/bin/pytest
 FLAKE=venv/bin/flake8
-FLAGS=
-PYPICLOUD_HOST=pypicloud.getkeepsafe.local
-TWINE=./venv/bin/twine
+PIPDEPTREE=venv/bin/pipdeptree
+PYUPGRADE=venv/bin/pyupgrade
+RG=rg
 
-update:
-	$(PIP) install -U pip
-	$(PIP) install -U .
+PYTHON_FILES=$(shell rg --files sdiff tests -g '*.py')
+PYTEST_SHARED_FLAGS=-s --durations=3 --durations-min=0.005
+PYTEST_FLAGS=$(PYTEST_SHARED_FLAGS)
+CI_COVERAGE_REPORT=
+
+PYPICLOUD_HOST=pypicloud.getkeepsafe.local
+TWINE=venv/bin/twine
+HOOK_PATH=$(shell git rev-parse --git-path hooks/pre-push)
+
+ifdef CI
+PYTEST_FLAGS += --junitxml=build/test/results.xml
+CI_COVERAGE_REPORT=$(COVERAGE) xml -o build/coverage/coverage.xml
+endif
+
+build-dir:
+	mkdir -p build/test build/coverage
 
 env:
-	test -d venv || python3 -m venv venv
+	test -d venv || python3.11 -m venv venv
+	$(PIP) install -U pip "setuptools>=82.0.1" "wheel>=0.47.0"
+	$(PIP) install -e .
 
-dev: env update
-	$(PIP) install .[tests,devtools]
+dev: env
+	$(PIP) install -e '.[dev]'
 
-install: env update
+update:
+	$(PIP) install -U .
 
-publish:
-	rm -rf dist
-	$(PYTHON) -m build .
-	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
+install: env
+
+ci-env:
+	@if [ -d "venv" ] && $(PIP) --version >/dev/null 2>&1; then \
+		echo "Reusing cached CI venv, no need to recreate when it has not changed"; \
+	else \
+		echo "No valid cached venv found, creating a fresh venv"; \
+		if [ -d "venv" ]; then rm -rf venv; fi; \
+		python3.11 -m venv venv; \
+		$(PIP) install -U pip "setuptools>=82.0.1" "wheel>=0.47.0"; \
+	fi
+
+ci-dev-install: ci-env
+	$(PIP) install -e '.[dev]'
 
 flake:
 	$(FLAKE) sdiff tests
 
-test: flake
-	$(COVERAGE) run -m pytest $(TEST_RUNNER_FLAGS)
+check-msgpack:
+	@echo "Checking for direct msgpack imports..."
+	@! $(RG) -n --glob '*.py' '^(import msgpack|from msgpack)' sdiff tests \
+		|| (echo "ERROR: Unexpected direct msgpack import found." && exit 1)
 
-vtest:
-	$(COVERAGE) run -m pytest -v $(TEST_RUNNER_FLAGS)
+lint: build-dir flake check-msgpack
 
-testloop:
-	while sleep 1; do $(TEST_RUNNER) -s --lf $(TEST_RUNNER_FLAGS); done
+test-only: build-dir
+	$(COVERAGE) erase
+	$(COVERAGE) run -m pytest $(PYTEST_FLAGS)
+	$(CI_COVERAGE_REPORT)
 
-cov cover coverage:
+test: lint test-only
+
+vtest vtests: build-dir
+	$(COVERAGE) erase
+	$(COVERAGE) run -m pytest -v $(PYTEST_FLAGS)
+	$(CI_COVERAGE_REPORT)
+
+fixture-smoke:
+	$(PYTEST) -q tests/test_golden_compatibility.py tests/test_sdiff.py
+
+import-smoke:
+	$(PYTHON) -c 'import importlib.metadata as m; import sdiff; from sdiff import MdParser, ZendeskHelpMdParser, diff, diff_links, diff_struct, renderer; print(m.version("sdiff"), MdParser.__name__, ZendeskHelpMdParser.__name__, renderer.TextRenderer.__name__)'
+
+smoke: fixture-smoke import-smoke
+
+depcheck:
+	$(PIP) check
+	$(PIPDEPTREE) --warn fail
+
+pyupgrade:
+	$(PYUPGRADE) --py311-plus --keep-percent-format $(PYTHON_FILES)
+
+coverage:
 	$(COVERAGE) report -m
 
+cov cover:
+	$(COVERAGE) html --directory coverage
+	@echo "Coverage HTML written to coverage/index.html"
+
+package:
+	$(PYTHON) -m build
+
+publish: package
+	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
+
+hooks:
+	cp git_hooks/pre-push $(HOOK_PATH)
+	chmod +x $(HOOK_PATH)
+
+unhooks:
+	rm -f $(HOOK_PATH)
+
 clean:
-	rm -rf `find . -name __pycache__`
-	rm -f `find . -type f -name '*.py[co]' `
-	rm -f `find . -type f -name '*~' `
-	rm -f `find . -type f -name '.*~' `
-	rm -f `find . -type f -name '@*' `
-	rm -f `find . -type f -name '#*#' `
-	rm -f `find . -type f -name '*.orig' `
-	rm -f `find . -type f -name '*.rej' `
+	find . -name __pycache__ -type d -prune -exec rm -rf {} +
+	find . -type f \( -name '*.py[co]' -o -name '*~' -o -name '.*~' -o -name '*.orig' -o -name '*.rej' \) -delete
 	rm -f .coverage
-	rm -rf coverage
-	rm -rf build
-	rm -rf venv
+	rm -rf build coverage dist sdiff.egg-info venv
 
-
-.PHONY: all build env linux run pep test vtest testloop cov clean
+.PHONY: build-dir check-msgpack ci-dev-install ci-env clean cov cover coverage depcheck dev env fixture-smoke \
+	flake hooks import-smoke install lint package publish pyupgrade smoke test test-only unhooks update vtest vtests
