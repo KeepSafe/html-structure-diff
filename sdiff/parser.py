@@ -78,8 +78,8 @@ class MdParser(mistune.BlockLexer):
         self.grammar_class.block_html = re.compile(
             r'^\s* *(?:{}|{}|{}) *(?:\n{{1,}}|\s*$)'.format(
                 r'<!--[\s\S]*?-->',
-                r'<({})((?:{})*?)>([\s\S]+?)<\/\1>'.format(mistune._block_tag, mistune._valid_attr),
-                r'<{}(?:{})*?>'.format(mistune._block_tag, mistune._valid_attr),
+                fr'<({mistune._block_tag})((?:{mistune._valid_attr})*?)>([\s\S]+?)<\/\1>',
+                fr'<{mistune._block_tag}(?:{mistune._valid_attr})*?>',
             )
         )
 
