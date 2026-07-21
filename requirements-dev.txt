@@ -35,13 +35,11 @@ pyflakes==3.2.0           # via flake8
 pygments==2.20.0          # via pytest, readme-renderer, rich
 pyproject-hooks==1.2.0    # via build, pip-tools
 pytest==9.1.1             # via sdiff (pyproject.toml)
-pyupgrade==3.21.2         # via sdiff (pyproject.toml)
 readme-renderer==45.0     # via twine
 requests==2.34.2          # via requests-toolbelt, twine
 requests-toolbelt==1.0.0  # via twine
 rfc3986==2.0.0            # via twine
 rich==15.0.0              # via twine
-tokenize-rt==6.2.0        # via pyupgrade
 twine==6.2.0              # via sdiff (pyproject.toml)
 urllib3==2.7.0            # via id, requests, twine
 wheel==0.47.0             # via pip-tools

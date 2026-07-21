@@ -30,7 +30,6 @@ dev = [
     "flake8-pyproject==1.2.4",
     "pip-tools==7.5.3",
     "pytest==9.1.1",
-    "pyupgrade==3.21.2",
     "twine==6.2.0",
 ]
 tests = [
