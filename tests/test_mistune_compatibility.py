@@ -2,6 +2,7 @@ import json
 from time import perf_counter
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 import mistune
 import sdiff
@@ -161,6 +162,27 @@ class TestLegacyMistuneBehaviorContract(TestCase):
         self.assertEqual([('[x](url)', Text)], [(node.text, type(node)) for node in text_only])
         self.assertEqual([('[x](url)', Link)], [(node.text, type(node)) for node in direct_only])
         self.assertEqual([('[x][ref]', Link)], [(node.text, type(node)) for node in reference_only])
+
+    def test_inline_parser_builds_link_indexes_only_when_link_rules_can_use_them(self):
+        skip_cases = (
+            ('plain text without a link opener', None),
+            ('[x](url)', ['text']),
+        )
+        for source, rules in skip_cases:
+            with self.subTest(source=source, rules=rules):
+                with patch.object(parser, '_build_link_indexes') as build_indexes:
+                    nodes = parser.InlineLexer().parse(source, rules)
+                build_indexes.assert_not_called()
+                self.assertEqual(source, nodes[0].text)
+
+        with patch.object(
+            parser,
+            '_build_link_indexes',
+            wraps=parser._build_link_indexes,
+        ) as build_indexes:
+            nodes = parser.InlineLexer().parse('[x](url)', ['link', 'text'])
+        build_indexes.assert_called_once_with('[x](url)')
+        self.assertEqual([('[x](url)', Link)], [(node.text, type(node)) for node in nodes])
 
     def test_parser_instances_reuse_the_legacy_token_list(self):
         block_parser = MdParser()

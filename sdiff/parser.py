@@ -279,9 +279,12 @@ class InlineLexer:
         text = text.rstrip('\n')
         active_rules = rules or self.default_rules
         position = 0
-        direct_link_ends, reference_link_ends = _build_link_indexes(text)
-        modern_state = InlineState({'ref_links': {}})
-        modern_state.src = text
+        direct_link_ends = reference_link_ends = None
+        modern_state = None
+        if '[' in text and any(rule in ('link', 'reflink') for rule in active_rules):
+            direct_link_ends, reference_link_ends = _build_link_indexes(text)
+            modern_state = InlineState({'ref_links': {}})
+            modern_state.src = text
 
         while position < len(text):
             for rule in active_rules:
@@ -296,6 +299,8 @@ class InlineLexer:
                 if rule in ('link', 'reflink') and text.startswith(('![', '['), position):
                     marker_length = 2 if text.startswith('![', position) else 1
                     opener_end = position + marker_length
+                    assert direct_link_ends is not None
+                    assert reference_link_ends is not None
                     if rule == 'link':
                         end_position = direct_link_ends[opener_end]
                     else:
@@ -305,6 +310,7 @@ class InlineLexer:
                         # Exercise Mistune 3's hardened parser for syntax it
                         # accepts; the local boundary remains authoritative for
                         # legacy raw-source compatibility.
+                        assert modern_state is not None
                         self._link_parser.parse_link(opener, modern_state)
                         source = text[position:end_position]
                         self.tokens.append(Image(source) if source[0] == '!' else Link(source))
