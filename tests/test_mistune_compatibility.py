@@ -42,6 +42,22 @@ class TestLegacyMistuneBehaviorContract(TestCase):
         self.assertEqual('[label](https://example.test/path "title")', link.text)
         self.assertEqual("![alt](image.png 'title')", image.text)
 
+    def test_parentheses_inside_quoted_titles_keep_the_complete_link_or_image(self):
+        expectations = {
+            '[](a "x)")': Link,
+            "[](a 'x)')": Link,
+            '![](^ ")")': Image,
+            "![](^ ')')": Image,
+            '[x](< ")")': Link,
+            '[x](<u> "x)")': Link,
+        }
+        for source, node_type in expectations.items():
+            with self.subTest(source=source):
+                tree = parser.parse(source)
+                self.assertEqual('p' + node_type.symbol, tree.print_all())
+                self.assertIsInstance(tree.nodes[0].nodes[0], node_type)
+                self.assertEqual(source, tree.nodes[0].nodes[0].text)
+
     def test_inline_image_after_text_keeps_legacy_link_classification(self):
         tree = parser.parse('text ![alt](image.png)')
         self.assertEqual('pta', tree.print_all())
@@ -219,9 +235,15 @@ class TestGoldenMistune084Fixtures(TestCase):
         self.assertEqual(self.expected['expanded_cases_sha256'], canonical_hash(self.cases))
 
     def test_every_target_result_matches_golden_mistune_084_fixture(self):
+        matrix_counts = {
+            'exhaustive_link_label_matrix': 15_624,
+            'exhaustive_link_tail_matrix': 313_576,
+        }
         for case in self.cases:
             with self.subTest(case=case['name']):
                 signature = run_case(case, sdiff, parser, HtmlRenderer, TextRenderer)
+                if case['name'] in matrix_counts:
+                    self.assertEqual(matrix_counts[case['name']], signature['case_count'])
                 actual_hash = canonical_hash(signature)
                 expected_hash = self.expected['cases'][case['name']]
                 if actual_hash != expected_hash:

@@ -201,7 +201,7 @@ def _link_label_matrix_sources():
 
 
 def _link_tail_matrix_sources():
-    for length in range(6):
+    for length in range(7):
         for characters in itertools.product('<>)\'" a', repeat=length):
             suffix = ''.join(characters)
             yield '[x](' + suffix

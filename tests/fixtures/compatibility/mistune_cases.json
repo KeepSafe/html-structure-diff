@@ -163,6 +163,21 @@
       "left": "[double](url \"title\") [single](url 'title') [parenthesized](url (title)) [angle](<url> \"title\")"
     },
     {
+      "name": "link_titles_with_closing_parentheses",
+      "parser": "MdParser",
+      "left": "[double](a \"x)\") [single](a 'x)')"
+    },
+    {
+      "name": "image_titles_with_closing_parentheses",
+      "parser": "MdParser",
+      "left": "![double](a \"x)\") ![single](a 'x)')"
+    },
+    {
+      "name": "link_title_angle_and_fallback_boundaries",
+      "parser": "MdParser",
+      "left": "[fallback](< \")\") [angle](<u> \"x)\")"
+    },
+    {
       "name": "link_multiline_destination",
       "parser": "MdParser",
       "left": "[label](https://example.test/\npath)"

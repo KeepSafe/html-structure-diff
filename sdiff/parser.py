@@ -130,49 +130,73 @@ def _next_nonspace_indexes(source):
     return indexes
 
 
-def _build_direct_tail_ends(source, next_parenthesis, next_nonspace):
+def _build_direct_tail_ends(source, next_nonspace):
     """Return the Mistune 0.8 direct-link tail end for each possible label close."""
-    quote_tail_ends = [None] * len(source)
-    next_valid_quote = [None] * (len(source) + 1)
+    source_length = len(source)
+
+    # Mistune 0.8 treats either quote character as a valid title terminator;
+    # the opening and closing quotes do not need to use the same character.
+    quote_tail_ends = [None] * source_length
+    next_valid_quote = [None] * (source_length + 1)
     next_quote = None
-    for position in range(len(source) - 1, -1, -1):
+    for position in range(source_length - 1, -1, -1):
         if source[position] in ('\'', '"'):
             close_parenthesis = next_nonspace[position + 1]
-            if close_parenthesis < len(source) and source[close_parenthesis] == ')':
+            if close_parenthesis < source_length and source[close_parenthesis] == ')':
                 quote_tail_ends[position] = close_parenthesis + 1
                 next_quote = position
         next_valid_quote[position] = next_quote
 
-    angle_tail_ends = [None] * len(source)
-    next_valid_angle = [None] * (len(source) + 1)
-    next_angle = None
-    for position in range(len(source) - 1, -1, -1):
-        if source[position] == '>':
-            tail_start = next_nonspace[position + 1]
-            if tail_start < len(source) and source[tail_start] == ')':
-                angle_tail_ends[position] = tail_start + 1
-            elif tail_start > position + 1 and tail_start < len(source) and source[tail_start] in ('\'', '"'):
-                closing_quote = next_valid_quote[tail_start + 1]
+    # Exact matches of the suffix after Mistune 0.8's non-greedy destination:
+    #     (?:\s+['"][\s\S]*?['"])?\s*\)
+    # The quoted-title branch is attempted before the no-title branch.
+    suffix_ends = [None] * (source_length + 1)
+    for position, char in enumerate(source):
+        if char == ')':
+            suffix_ends[position] = position + 1
+        elif char.isspace():
+            suffix_start = next_nonspace[position]
+            if suffix_start < source_length and source[suffix_start] in ('\'', '"'):
+                closing_quote = next_valid_quote[suffix_start + 1]
                 if closing_quote is not None:
-                    angle_tail_ends[position] = quote_tail_ends[closing_quote]
-            if angle_tail_ends[position] is not None:
-                next_angle = position
+                    suffix_ends[position] = quote_tail_ends[closing_quote]
+            elif suffix_start < source_length and source[suffix_start] == ')':
+                suffix_ends[position] = suffix_start + 1
+
+    # The destination is non-greedy, so use the earliest body endpoint whose
+    # suffix matches. Angle mode similarly uses the earliest `>` immediately
+    # followed by a valid suffix.
+    next_valid_suffix = [None] * (source_length + 1)
+    next_valid_angle = [None] * (source_length + 1)
+    next_suffix = None
+    next_angle = None
+    for position in range(source_length - 1, -1, -1):
+        if suffix_ends[position] is not None:
+            next_suffix = position
+        next_valid_suffix[position] = next_suffix
+
+        if source[position] == '>' and suffix_ends[position + 1] is not None:
+            next_angle = position
         next_valid_angle[position] = next_angle
 
-    tail_ends = [None] * len(source)
-    for position in range(len(source) - 1):
+    tail_ends = [None] * source_length
+    for position in range(source_length - 1):
         if source[position:position + 2] != '](':
             continue
+
         destination_start = next_nonspace[position + 2]
-        fallback_parenthesis = next_parenthesis[destination_start]
-        if fallback_parenthesis is None:
-            continue
-        if destination_start < len(source) and source[destination_start] == '<':
+
+        # Optional angle mode is attempted first. If it cannot finish, the
+        # regex backtracks and treats `<` as ordinary destination content.
+        if destination_start < source_length and source[destination_start] == '<':
             closing_angle = next_valid_angle[destination_start + 1]
             if closing_angle is not None:
-                tail_ends[position] = angle_tail_ends[closing_angle]
+                tail_ends[position] = suffix_ends[closing_angle + 1]
                 continue
-        tail_ends[position] = fallback_parenthesis + 1
+
+        suffix_start = next_valid_suffix[destination_start]
+        if suffix_start is not None:
+            tail_ends[position] = suffix_ends[suffix_start]
     return tail_ends
 
 
@@ -222,9 +246,8 @@ def _build_link_indexes(source):
     next_open = _next_character_indexes(source, '[')
     next_bracket = _next_character_indexes(source, ']')
     next_caret = _next_character_indexes(source, '^')
-    next_parenthesis = _next_character_indexes(source, ')')
     next_nonspace = _next_nonspace_indexes(source)
-    direct_tails = _build_direct_tail_ends(source, next_parenthesis, next_nonspace)
+    direct_tails = _build_direct_tail_ends(source, next_nonspace)
     reference_tails = _build_reference_tail_ends(
         source,
         next_bracket,

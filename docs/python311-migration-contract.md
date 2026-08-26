@@ -52,9 +52,9 @@ HTML, heading styles, lists, images and reference links, hard breaks and directi
 insert/delete symmetry, and nested Zendesk constructs.
 
 `scripts/run_mistune_compat.py` runs the frozen 0.8.4 worktree and this 3.3.4 worktree in isolated virtual
-environments. The runner expands 61 committed corpus entries, all 13 golden cases, all 12 automatically discovered
-Markdown fixture pairs, and 1,000 fixed-seed structured fuzz pairs for 1,086 named comparisons. Two aggregate corpus
-entries exhaustively check another 98,334 short link/image label and destination combinations. The runner compares
+environments. The runner expands 64 committed corpus entries, all 13 golden cases, all 12 automatically discovered
+Markdown fixture pairs, and 1,000 fixed-seed structured fuzz pairs for 1,089 named comparisons. Two aggregate corpus
+entries exhaustively check another 329,200 short link/image label and destination combinations. The runner compares
 recursive ASTs, exact text/HTML rendering, structural and link diff results, mutated metadata, and phase-specific
 exception signatures.
 
@@ -191,7 +191,8 @@ Expected evidence:
 - The adapter honors direct `InlineLexer.parse(..., rules=...)` rule ordering and reused-parser token-list identity,
   matching the exposed 0.8.4 facade behavior.
 - The legacy nested-label and destination grammar is compiled into a linear-time index. This preserves 0.8.4's
-  unusual greedy/backtracking boundaries while eliminating repeated suffix scans on malformed nested openers.
+  unusual greedy/backtracking boundaries, including quoted titles containing `)` and angle-destination fallback,
+  while eliminating repeated suffix scans on malformed nested openers.
 - The port removes the class-level Zendesk rule mutation that could make a later plain `MdParser` call fail. This is
   an intentional target-only defect fix; document outputs remain oracle-identical.
 - Existing compatible hard pins are retained: `coverage==7.6.1` and `flake8==7.1.1`.
@@ -249,19 +250,20 @@ Proof results:
 | `make ci-dev-install` | Pass | CI bootstrap installed/reused the exact-version venv and final `.[dev]` dependency shape. |
 | full skill pyupgrade ladder over `sdiff` and `tests` | Pass | All six stages were reconfirmed live with zero remaining changes; the earlier Python 3.6 stage changes are isolated in commit `7c78ad3`. |
 | `make requirements` twice | Pass | Both pip-compile outputs were byte-stable; compile tooling is `pip-tools==7.5.3` with `pip==25.3`. |
-| `make test` | Pass | Flake8 and msgpack guard passed; 77 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures. |
+| `make test` | Pass | Flake8 and msgpack guard passed; 78 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures. |
 | `make coverage` | Pass | Total branch-aware coverage is 99%; `sdiff/parser.py` has 100% statement and 99% branch coverage. |
 | `make fixture-smoke` | Pass | 3 test methods and 12 fixture subtests passed, including the exact golden snapshot. |
-| `make mistune-compat` | Pass | Mistune 0.8.4 oracle vs 3.3.4 target: 1,086 named cases, 0 mismatches; aggregate matrix cases cover 98,334 additional link/image combinations. |
+| `make mistune-compat` | Pass | Mistune 0.8.4 oracle vs 3.3.4 target: 1,089 named cases, 0 mismatches; aggregate matrix cases cover 329,200 additional link/image combinations. |
+| direct-link endpoint oracle sweep | Pass | 1,921,600 exhaustive tails through length seven plus 500,000 deterministic randomized inputs matched Mistune 0.8.4 with zero mismatches. |
 | malformed-link bounded-time regression | Pass | 16,000 nested link and image openers complete in about 0.03 seconds each; the test ceiling is 2 seconds. |
 | `make import-smoke` | Pass | Imported documented public API and printed `2.0.0 MdParser ZendeskHelpMdParser TextRenderer`. |
 | `make depcheck` | Pass | `pip check` found no broken requirements. |
-| `CI=1 make test-only` | Pass | 77 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
+| `CI=1 make test-only` | Pass | 78 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
 | `venv/bin/python -m compileall -q sdiff tests scripts` | Pass | Source, tests, and compatibility scripts compiled on Python 3.11.13. |
 | `rm -rf dist && venv/bin/python -m build .` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl` without invoking the publishing targets. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |
 | sdist content listing | Pass | Archive contains all tests, compatibility helpers, same/different Markdown fixtures, golden JSON, and Golden Mistune 0.8.4 Fixtures. |
-| extracted-sdist test suite | Pass | All 77 tests and 1,120 subtests passed directly from the unpacked source archive. |
+| extracted-sdist test suite | Pass | All 78 tests and 1,129 subtests passed directly from the unpacked source archive. |
 | isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
 | CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
 | PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `5ebec5545ba6df34942403c9afd73fc87b471c49`. |

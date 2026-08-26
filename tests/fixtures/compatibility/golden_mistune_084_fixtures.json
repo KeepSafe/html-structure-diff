@@ -1,5 +1,5 @@
 {
-  "case_count": 1086,
+  "case_count": 1089,
   "cases": {
     "atx_headings": "f7be5be83689cf22dd77489d41ab7881d1f92fdcce915578c47bbd31932410e3",
     "autolinks_and_bare_urls_are_text": "f01bbeae321bf5357c645c236c0b81689c320f22111ebc28e7419984925f4a4e",
@@ -14,7 +14,7 @@
     "empty": "031a3819af28b5a3ad407b04f08ea58e647f1520252a1d42b5c2ec7b3378cfdb",
     "empty_and_unclosed_images": "9e1a345d0d80b3dec00dfd66e77195c1d3aaa0768f2c9f40f72f353baf7dfb93",
     "exhaustive_link_label_matrix": "f891cf17d584b865562e6a30af596854701f680c0d3809f1956b508ab01d9286",
-    "exhaustive_link_tail_matrix": "819c8d053459be2e7c3038f87120bead4995df315eb6052a2897118e716e08f7",
+    "exhaustive_link_tail_matrix": "d708a48837c65b76b9d59b013c8620268b600fe0da6ef04d80ae179709f686bc",
     "fixture_tests_fixtures_different_extra_paragraph": "4f4044ad3694fac516bb4fb8697b29efde888dbb0aae6b87b370255a460bf4f1",
     "fixture_tests_fixtures_different_zendesk_callout_in_tabs": "4d63ca718729a84c5d63bc618d7379a88ee528366863bec242a598c1b95d0c93",
     "fixture_tests_fixtures_different_zendesk_steps": "30dfb15eb7a6be8f4dd84f684725bc54d254b5401f826ade737600fb7c3dc3cb",
@@ -1046,6 +1046,7 @@
     "html_empty_and_self_closing": "2118bd89e5e791ffda68e849e7de684a45c15272f0dbbd4ef88feb46c77528d8",
     "html_inline_comment": "e078b0c7f6ce7a6509917ab936d913b3a8952046f914381c1c880f5d30c98046",
     "html_mismatched_case_and_attributes": "371e8e82c834c84d9cec5fee778be8a54750607db821edfe3688c408e2a8a252",
+    "image_titles_with_closing_parentheses": "8e330e422c141af716981538d092cb7cfa914ee1db1d6c1429189d34bcd7085b",
     "inline_html_is_escaped": "bf38be2ddbcbaac36438d275330de8ce00bf921059a145728b3a614d6d809e56",
     "inline_parser_reuse": "179af2c54a9197e53172b31170b39bde737cd3c4b145ba3160f228f94c1ce85e",
     "inline_rule_selection": "8ace84d3afff2f3c1c2a06d080fe62941116c2429a6bc4f321c5cfe2c0653b15",
@@ -1057,7 +1058,9 @@
     "link_deep_and_unbalanced_labels": "5ffff731ad3ad2b5b571e1eb10deb38e6a9bd8db4d4b0937b37b8ee5c54899d7",
     "link_destination_forms": "2334165975b2593c3296aec4a31fa970de2555be00870ddeb42516c8b5f40cb2",
     "link_multiline_destination": "d850ad3f67655636cfe8bd26ffba99759f2a0cec42785cf08d2065e0654faffb",
+    "link_title_angle_and_fallback_boundaries": "2b217d60dd080a3d9da14a9086a58ebd444bbbd425c4c14aca55d4a044043c2f",
     "link_title_forms": "7b69c2bb8fd4f872ebb7311a664762d0e667e000d17d26494d3613b070d3dcf5",
+    "link_titles_with_closing_parentheses": "fb75c6f8537b156c5d12e8bd9f5f38674e42d966cf7110a4f72e9559cbe2e38c",
     "link_unmatched_closing_boundaries": "7539db8e34dda790422b11bee6e32094177caf380ebe6b31bd6cb3963f505bde",
     "links_and_images": "2d5d25bc284366db81632c66fe9eb4fb6a75c9b5237df0720e420bbc9fbf8e54",
     "list_thematic_break_exception": "31930d90b3ec6b0235522fe9d0053d76f7f1ed1dbffbfdc518afa08057482bac",
@@ -1088,11 +1091,11 @@
     "zendesk_sibling_custom_tags": "5b667bf654ec935f86e14d65150370cb2df867b52ae3965ed59c0b6caf27443b",
     "zendesk_uppercase_and_multiple_styles": "b3983c67f1153e42a6952bdb466654d534a6fad0e2960f4c5455a54949462fe2"
   },
-  "expanded_cases_sha256": "2173c20d71bc273aa41c4793bac3a9f5a10adb581ba9cbfed738e7a34ae66671",
+  "expanded_cases_sha256": "4d46f648a0b58e7e0d5db234bf6ef36d234ca249cdb6945c807ca6c917bc5237",
   "fuzz_seed": 311084334,
   "oracle": {
     "mistune": "0.8.4",
-    "python": "3.11.9",
+    "python": "3.11.13",
     "revision": "a73f7122421a08c380b87c38fccfe8b54d169cb9",
     "sdiff": "2.0.0"
   },
