@@ -19,7 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-    "mistune==0.8.4",
+    "mistune==3.3.4",
 ]
 
 [project.optional-dependencies]

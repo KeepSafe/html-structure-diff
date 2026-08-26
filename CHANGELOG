@@ -1,3 +1,12 @@
+2.0.0 (unreleased)
+------------------
+
+- Require Python 3.11.
+- Upgrade Mistune from 0.8.4 to 3.3.4 behind a compatibility parser that preserves the existing sdiff tree,
+  rendering, diff, HTML, list, link/image, and Zendesk behavior.
+- Add self-contained Golden Mistune 0.8.4 Fixtures, a dual-version compatibility harness,
+  deterministic fuzz cases, and linear-time malformed-link regression coverage.
+
 0.2.0 (2018-08-21)
 ------------------
 

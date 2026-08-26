@@ -24,7 +24,7 @@ keyring==25.7.0           # via twine
 markdown-it-py==4.2.0     # via rich
 mccabe==0.7.0             # via flake8
 mdurl==0.1.2              # via markdown-it-py
-mistune==0.8.4            # via sdiff (pyproject.toml)
+mistune==3.3.4            # via sdiff (pyproject.toml)
 more-itertools==11.1.0    # via jaraco-classes, jaraco-functools
 nh3==0.3.6                # via readme-renderer
 packaging==26.2           # via build, pytest, twine, wheel

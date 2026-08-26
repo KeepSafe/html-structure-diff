@@ -4,4 +4,4 @@
 #
 #    pip-compile --annotation-style=line --output-file=requirements.txt pyproject.toml
 #
-mistune==0.8.4            # via sdiff (pyproject.toml)
+mistune==3.3.4            # via sdiff (pyproject.toml)

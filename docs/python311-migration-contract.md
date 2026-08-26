@@ -36,7 +36,7 @@ Public imports exercised by this migration:
 - `sdiff.renderer.HtmlRenderer`
 - model and error objects exposed through `sdiff.model` and diff results
 
-Behavior that must remain stable:
+Behavior that must remain stable across the Mistune 0.8.4-to-3.3.4 adapter:
 
 - Mistune 0.8 Markdown tokenization and structural symbols
 - translated documents with matching structure
@@ -47,17 +47,30 @@ Behavior that must remain stable:
 
 The existing Markdown fixture pairs under `tests/fixtures/same` and `tests/fixtures/different` remain the broad
 classification proof. `tests/fixtures/golden/python311_compatibility.json` records exact parser, renderer,
-structural-diff, and link-diff outputs for 12 compact Mistune 0.8.4 scenarios. The oracle covers block and inline
+structural-diff, and link-diff outputs for 13 compact Mistune 0.8.4 scenarios. The oracle covers block and inline
 HTML, heading styles, lists, images and reference links, hard breaks and directional marks, link-count changes,
 insert/delete symmetry, and nested Zendesk constructs.
+
+`scripts/run_mistune_compat.py` runs the frozen 0.8.4 worktree and this 3.3.4 worktree in isolated virtual
+environments. The runner expands 61 committed corpus entries, all 13 golden cases, all 12 automatically discovered
+Markdown fixture pairs, and 1,000 fixed-seed structured fuzz pairs for 1,086 named comparisons. Two aggregate corpus
+entries exhaustively check another 98,334 short link/image label and destination combinations. The runner compares
+recursive ASTs, exact text/HTML rendering, structural and link diff results, mutated metadata, and phase-specific
+exception signatures.
+
+Normal `make test` recomputes every target result against the Golden Mistune 0.8.4 Fixtures at
+`tests/fixtures/compatibility/golden_mistune_084_fixtures.json`. This compact expected-results file is generated only
+from the frozen 0.8.4 implementation, so the normal suite retains the complete parity proof without requiring another
+worktree. `make mistune-compat` provides readable full-result diffs, and `make mistune-compat-refresh` deliberately
+refreshes the golden fixtures after an approved corpus change.
 
 ## Downstream Consumers
 
 Local source and requirements scans found:
 
 - `content-validator` directly imports `diff`, `renderer`, and `MdParser`.
-- The migrated `content-validator` branch targets
-  `sdiff @ git+https://github.com/KeepSafe/html-structure-diff.git@1.0.0`.
+- The migrated `content-validator` branch currently targets immutable commit `7cac220`; it must move to the final
+  reviewed 2.x tag/commit to receive Mistune 3.3.4.
 - `email-service` and `translation-real-time-validaton` consume `sdiff` transitively through
   `content-validator`; their legacy requirements still reference tag `0.4.1`.
 
@@ -68,14 +81,13 @@ flows are safe until each downstream repo reruns its own integration proof with 
 
 - Interpreter target: CPython 3.11, with `.python-version` normalized to `3.11.13`
 - Packaging source of truth: `pyproject.toml`
-- Package version: `1.1.0`
+- Package version: `2.0.0`
 - Runtime dependencies: exact compatible pins
 - Build/test/dev dependencies: exact pins in a `dev` optional dependency group
 - Requirements artifacts: generated with `pip-compile` from `pyproject.toml`
 
-`master` already contains the prior Python 3.11 work and is tagged `1.0.0`. This compatibility-focused follow-up
-therefore uses a minor release, `1.1.0`, rather than treating the already-established runtime baseline as another
-major-version break.
+The historical repository already uses 1.x tags. The Python 3.11 migration branch therefore starts a 2.x release
+line. Only downstream consumers that have migrated to Python 3.11 should move to those tags.
 
 ## Baseline Audit
 
@@ -143,6 +155,7 @@ Required commands on the final branch:
 - `make lint`
 - `make test`
 - `make fixture-smoke`
+- `make mistune-compat`
 - `CI=1 make test-only`
 - public import/API smoke
 - `make depcheck`
@@ -156,19 +169,31 @@ Expected evidence:
 
 - exact golden snapshot at `tests/fixtures/golden/python311_compatibility.json`
 - golden compatibility test at `tests/test_golden_compatibility.py`
+- target-side parity/regression tests at `tests/test_mistune_compatibility.py`
+- dual-version reporter and runner under `scripts/`
+- curated/fuzz corpus configuration at `tests/fixtures/compatibility/mistune_cases.json`
+- Golden Mistune 0.8.4 Fixtures at
+  `tests/fixtures/compatibility/golden_mistune_084_fixtures.json`
 - coverage XML at `build/coverage/coverage.xml` in CI mode
 - xUnit output at `build/test/results.xml` in CI mode
 - local sdist and wheel under ignored `dist/`
-- source distribution containing all Markdown and JSON compatibility fixtures
+- source distribution containing the full test suite, compatibility helpers, and Markdown/JSON fixtures
 - command results in this contract and the umbrella ExecPlan
 
 ## Dependency and Package Notes
 
-- Runtime metadata and `requirements.txt` now agree on `mistune==0.8.4`. The untouched editable-install baseline
-  already resolved 0.8.4 from the old `mistune <= 1` range, so this is a deterministic pin of proven behavior rather
-  than a broad parser upgrade.
-- Mistune 3.3.3 is intentionally deferred to a separate, approval-gated commit. Its API/changelog audit and any
-  compatibility implementation will be performed against the committed golden oracle.
+- Runtime metadata and both generated requirement files now agree on `mistune==3.3.4`.
+- Mistune 3 removed the `BlockLexer`, `InlineLexer`, and private grammar constants used by the old implementation.
+  The adapter owns the intentionally narrow sdiff block/list/text grammar locally, uses Mistune 3's hardened inline
+  link parser surface, and emits the existing sdiff model directly.
+- The adapter preserves smart entity escaping, literal unsupported Markdown, raw link/image source, unresolved
+  reference links, legacy list shapes, inline-vs-block HTML classification, and recursive Zendesk tags.
+- The adapter honors direct `InlineLexer.parse(..., rules=...)` rule ordering and reused-parser token-list identity,
+  matching the exposed 0.8.4 facade behavior.
+- The legacy nested-label and destination grammar is compiled into a linear-time index. This preserves 0.8.4's
+  unusual greedy/backtracking boundaries while eliminating repeated suffix scans on malformed nested openers.
+- The port removes the class-level Zendesk rule mutation that could make a later plain `MdParser` call fail. This is
+  an intentional target-only defect fix; document outputs remain oracle-identical.
 - Existing compatible hard pins are retained: `coverage==7.6.1` and `flake8==7.1.1`.
 - The previously ranged `pytest >= 8` dependency is pinned to the proven environment's `pytest==9.1.1`.
 - Added exact workflow pins: `build==1.5.0`, `flake8-pyproject==1.2.4`, `pip-tools==7.5.3`, and `twine==6.2.0`.
@@ -178,66 +203,77 @@ Expected evidence:
   `pip==25.3` to satisfy the skill's `pip<26` compatibility guardrail.
 - Removed unused legacy `nose` and `autopep8` entries from `requirements-dev.txt`; this repo uses pytest and does
   not have an autopep8 target.
-- The built wheel metadata declares `Requires-Python: >=3.11,<3.12` and `Requires-Dist: mistune==0.8.4`.
-- `MANIFEST.in` narrowly includes Markdown and JSON fixture data in the sdist; wheel contents remain package-only.
+- The built wheel metadata declares `Requires-Python: >=3.11,<3.12` and `Requires-Dist: mistune==3.3.4`.
+- `MANIFEST.in` includes the test modules, compatibility helper scripts, and Markdown/JSON fixture data needed to run
+  the complete suite from an extracted sdist; wheel contents remain package-only.
 - No direct or transitive `msgpack` or `libks` dependency is present.
 
 ## Migration Result and Proof Log
 
-Date: 2026-07-21
+Date: 2026-08-26
 
 Branch: `python311-upgrade`
 
-Ten reviewable commits, including this evidence record, were created on `python311-upgrade`; no pull request or push
-was created.
+The Python migration commits and draft pull request already exist on `python311-upgrade`. The Mistune 3.3.4 port is
+being prepared as one additional reviewable commit; all changes remain uncommitted until explicit user approval.
 
 Completed applicable work:
 
 - Replaced `setup.py` and `setup.cfg` with `pyproject.toml`.
 - Normalized `.python-version` and package/CI policy to Python 3.11.13.
-- Bumped the package from `1.0.0` to the compatible minor release `1.1.0` and preserved public behavior.
+- Started the Python 3.11-only 2.x release line and preserved public behavior.
 - Hard-pinned the runtime dependency and generated deterministic requirements artifacts with `pip-compile`.
 - Moved Flake8 and coverage configuration into `pyproject.toml`.
 - Added package-oriented `env`, `dev`, `lint`, `test-only`, `fixture-smoke`, `import-smoke`, `depcheck`,
   `requirements`, package-build, CI-install, and hook targets.
 - Added native CircleCI 2.1 package jobs with reusable executors/commands for dependency preparation, lint, tests,
   xUnit, and coverage XML.
-- Added exact golden parser/renderer/structural-diff/link-diff snapshots for 12 behavior-sensitive scenarios.
+- Added exact golden parser/renderer/structural-diff/link-diff snapshots for 13 behavior-sensitive scenarios.
+- Ported the parser from removed Mistune 0.8 lexer APIs to a Mistune 3.3.4 compatibility adapter.
+- Added a dual-worktree exact-signature harness, self-contained Golden Mistune 0.8.4 Fixtures, expanded
+  curated/fuzz/exhaustive link matrices, and target-side parity unit tests.
+- Fixed a review-discovered `InlineLexer` explicit-rule mismatch and replaced the first nested-label scanner after
+  exhaustive testing exposed Mistune 0.8 greedy-label edge cases.
 - Ran the full skill ladder. The `--py36-plus` stage converted one list-rendering format call and two parser regex
   format calls to f-strings; Python 3.7 through 3.11 stages were no-ops. Golden outputs remained unchanged.
-- Review found that the first sdist omitted fixture data; `MANIFEST.in` fixed the package artifact before handoff.
+- Review found that the first sdist omitted fixture data, and the expanded parity suite exposed missing test helper
+  modules in the archive. `MANIFEST.in` now makes the complete extracted-sdist suite runnable before handoff.
 - Removed `pipdeptree` and the completed one-time `pyupgrade` tool from the final developer environment.
 
 Proof results:
 
 | Command | Result | Evidence |
 | --- | --- | --- |
-| `make clean`; `make env`; `make dev` | Pass | Fresh venv is CPython 3.11.13 with editable `sdiff==1.1.0`, `mistune==0.8.4`, and exact dev tooling. |
+| `make clean`; `make env`; `make dev` | Pass | Fresh venv is CPython 3.11.13 with editable `sdiff==2.0.0`, `mistune==3.3.4`, and the locked dev toolchain. |
 | `make ci-dev-install` | Pass | CI bootstrap installed/reused the exact-version venv and final `.[dev]` dependency shape. |
 | full skill pyupgrade ladder over `sdiff` and `tests` | Pass | All six stages were reconfirmed live with zero remaining changes; the earlier Python 3.6 stage changes are isolated in commit `7c78ad3`. |
 | `make requirements` twice | Pass | Both pip-compile outputs were byte-stable; compile tooling is `pip-tools==7.5.3` with `pip==25.3`. |
-| `make test` | Pass | Flake8 and msgpack guard passed; 54 tests passed on Python 3.11.13. |
-| `make coverage` | Pass | Total branch-aware coverage remained 96%. |
+| `make test` | Pass | Flake8 and msgpack guard passed; 77 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures. |
+| `make coverage` | Pass | Total branch-aware coverage is 99%; `sdiff/parser.py` has 100% statement and 99% branch coverage. |
 | `make fixture-smoke` | Pass | 3 test methods and 12 fixture subtests passed, including the exact golden snapshot. |
-| `make import-smoke` | Pass | Imported documented public API and printed `1.1.0 MdParser ZendeskHelpMdParser TextRenderer`. |
+| `make mistune-compat` | Pass | Mistune 0.8.4 oracle vs 3.3.4 target: 1,086 named cases, 0 mismatches; aggregate matrix cases cover 98,334 additional link/image combinations. |
+| malformed-link bounded-time regression | Pass | 16,000 nested link and image openers complete in about 0.03 seconds each; the test ceiling is 2 seconds. |
+| `make import-smoke` | Pass | Imported documented public API and printed `2.0.0 MdParser ZendeskHelpMdParser TextRenderer`. |
 | `make depcheck` | Pass | `pip check` found no broken requirements. |
-| `CI=1 make test-only` | Pass | 54 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
-| `venv/bin/python -m compileall -q sdiff tests` | Pass | Source and tests compiled on Python 3.11.13. |
-| `make package` | Pass | Built isolated `sdiff-1.1.0.tar.gz` and `sdiff-1.1.0-py3-none-any.whl`. |
+| `CI=1 make test-only` | Pass | 77 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
+| `venv/bin/python -m compileall -q sdiff tests scripts` | Pass | Source, tests, and compatibility scripts compiled on Python 3.11.13. |
+| `make package` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl`. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |
-| sdist fixture listing | Pass | Archive contains all same/different Markdown fixtures and `python311_compatibility.json`. |
-| isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed the wheel with `mistune==0.8.4` and ran `sdiff.diff()`. |
+| sdist content listing | Pass | Archive contains all tests, compatibility helpers, same/different Markdown fixtures, golden JSON, and Golden Mistune 0.8.4 Fixtures. |
+| extracted-sdist test suite | Pass | All 77 tests and 1,120 subtests passed directly from the unpacked source archive. |
+| isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
 | CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
+| downstream `content-validator` test suite | Pass | 65 tests passed with one expected skip against the local target and Mistune 3.3.4; HTTP was mocked. |
 | `make hooks`, installed-file comparison, `make unhooks` | Pass | Executable pre-push hook installed exactly and was removed after verification. |
 | `git diff --check` | Pass | No whitespace errors. |
 
-An additional pre-final run passed all 54 tests on Python 3.11.9 before the exact 3.11.13 environment was selected.
+An additional clean run passed all 71 tests on Python 3.11.9 before the exact 3.11.13 environment was selected.
 
 ## Known Gaps
 
 - Remote CI is not exercised by default local proof.
 - Downstream `content-validator`, `email-service`, and `translation-real-time-validaton` still need their own
   requirements refresh and integration proof after consuming the merged package state.
-- Mistune 3.3.3 research and implementation have not started; they require explicit user approval and a separate
-  commit after this checkpoint.
-- No package release, tag, push, or pull request is part of this local checkpoint.
+- No 2.x package tag or release has been created. Downstreams must pin the final reviewed immutable tag/commit,
+  never the moving branch.
+- The Mistune change has not been committed or pushed; review approval is still required.

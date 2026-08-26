@@ -9,6 +9,8 @@ PYTEST=venv/bin/pytest
 FLAKE=venv/bin/flake8
 PIP_COMPILE=venv/bin/pip-compile
 RG=rg
+MISTUNE_ORACLE_REV?=a73f7122421a08c380b87c38fccfe8b54d169cb9
+MISTUNE_GOLDEN_FIXTURES=tests/fixtures/compatibility/golden_mistune_084_fixtures.json
 
 PYTEST_SHARED_FLAGS=-s --durations=3 --durations-min=0.005
 PYTEST_FLAGS=$(PYTEST_SHARED_FLAGS)
@@ -32,6 +34,7 @@ env:
 	$(PIP) install -e .
 
 dev: env
+	$(PIP) install -r requirements-dev.txt
 	$(PIP) install -e '.[dev]'
 
 update:
@@ -54,7 +57,7 @@ ci-dev-install: ci-env
 	$(PIP) install -e '.[dev]'
 
 flake:
-	$(FLAKE) sdiff tests
+	$(FLAKE) sdiff tests scripts
 
 check-msgpack:
 	@echo "Checking for direct msgpack imports..."
@@ -85,6 +88,15 @@ smoke: fixture-smoke import-smoke
 
 depcheck:
 	$(PIP) check
+
+mistune-compat:
+	$(PYTHON) scripts/run_mistune_compat.py --oracle-revision "$(MISTUNE_ORACLE_REV)" \
+		--bootstrap-python "$(BOOTSTRAP_PYTHON)" --target .
+
+mistune-compat-refresh:
+	$(PYTHON) scripts/run_mistune_compat.py --oracle-revision "$(MISTUNE_ORACLE_REV)" \
+		--bootstrap-python "$(BOOTSTRAP_PYTHON)" --target . \
+		--write-golden-fixtures $(MISTUNE_GOLDEN_FIXTURES)
 
 requirements: dev
 	$(PIP_COMPILE) --annotation-style=line --output-file=requirements.txt pyproject.toml
@@ -117,4 +129,6 @@ clean:
 	rm -rf build coverage dist sdiff.egg-info venv
 
 .PHONY: build-dir check-msgpack ci-dev-install ci-env clean cov cover coverage depcheck dev env fixture-smoke \
-	flake hooks import-smoke install lint package publish requirements smoke test test-only unhooks update vtest vtests
+	flake hooks import-smoke install lint mistune-compat mistune-compat-refresh package publish requirements smoke \
+	test test-only unhooks update \
+	vtest vtests
