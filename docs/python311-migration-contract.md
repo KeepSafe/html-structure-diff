@@ -159,8 +159,8 @@ Required commands on the final branch:
 - `CI=1 make test-only`
 - public import/API smoke
 - `make depcheck`
-- `venv/bin/python -m compileall -q sdiff tests`
-- `make package`
+- `venv/bin/python -m compileall -q sdiff tests scripts`
+- `rm -rf dist && venv/bin/python -m build .`
 - built-wheel install and import smoke in an isolated CPython 3.11.13 venv
 - `circleci config validate .circleci/config.yml` when the local CircleCI CLI can validate without a paid service
 - `git diff --check`
@@ -214,8 +214,8 @@ Date: 2026-08-26
 
 Branch: `python311-upgrade`
 
-The Python migration commits and draft pull request already exist on `python311-upgrade`. The Mistune 3.3.4 port is
-being prepared as one additional reviewable commit; all changes remain uncommitted until explicit user approval.
+Draft PR #14 contains the committed Python migration, Mistune 3.3.4 compatibility port, and 2.0.0 release workflow
+on `python311-upgrade`. The final 2.0.0 tag and internal package publication remain pending.
 
 Completed applicable work:
 
@@ -225,7 +225,8 @@ Completed applicable work:
 - Hard-pinned the runtime dependency and generated deterministic requirements artifacts with `pip-compile`.
 - Moved Flake8 and coverage configuration into `pyproject.toml`.
 - Added package-oriented `env`, `dev`, `lint`, `test-only`, `fixture-smoke`, `import-smoke`, `depcheck`,
-  `requirements`, package-build, CI-install, and hook targets.
+  `requirements`, CI-install, release, and hook targets. `package` intentionally aliases the publishing workflow;
+  build-only verification uses `venv/bin/python -m build .` directly.
 - Added native CircleCI 2.1 package jobs with reusable executors/commands for dependency preparation, lint, tests,
   xUnit, and coverage XML.
 - Added exact golden parser/renderer/structural-diff/link-diff snapshots for 13 behavior-sensitive scenarios.
@@ -257,13 +258,13 @@ Proof results:
 | `make depcheck` | Pass | `pip check` found no broken requirements. |
 | `CI=1 make test-only` | Pass | 77 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
 | `venv/bin/python -m compileall -q sdiff tests scripts` | Pass | Source, tests, and compatibility scripts compiled on Python 3.11.13. |
-| `make package` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl`. |
+| `rm -rf dist && venv/bin/python -m build .` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl` without invoking the publishing targets. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |
 | sdist content listing | Pass | Archive contains all tests, compatibility helpers, same/different Markdown fixtures, golden JSON, and Golden Mistune 0.8.4 Fixtures. |
 | extracted-sdist test suite | Pass | All 77 tests and 1,120 subtests passed directly from the unpacked source archive. |
 | isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
 | CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
-| PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `ebb7109261cdddcf72f5ae9907501236ef067767`. |
+| PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `5ebec5545ba6df34942403c9afd73fc87b471c49`. |
 | downstream `content-validator` test suite | Pass | 65 tests passed with one expected skip against the local target and Mistune 3.3.4; HTTP was mocked. |
 | `make hooks`, installed-file comparison, `make unhooks` | Pass | Executable pre-push hook installed exactly and was removed after verification. |
 | `git diff --check` | Pass | No whitespace errors. |
