@@ -20,6 +20,8 @@ else:
 
 
 ORACLE_DIR = Path('/tmp/html-structure-diff-mistune-084-oracle')
+ORACLE_MISTUNE_VERSION = '0.8.4'
+ORACLE_SDIFF_VERSION = '1.0.0'
 
 
 def _run_report(python: Path, reporter: Path, repo: Path, cases: Path):
@@ -43,6 +45,17 @@ def _git_revision(repo):
     return completed.stdout.strip()
 
 
+def _resolve_revision(repo, revision):
+    completed = subprocess.run(
+        ['git', 'rev-parse', '--verify', f'{revision}^{{commit}}'],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
 def _git_status(repo):
     completed = subprocess.run(
         ['git', 'status', '--porcelain'],
@@ -54,7 +67,31 @@ def _git_status(repo):
     return completed.stdout.strip()
 
 
-def _validate_oracle(oracle, revision):
+def _python_version(python):
+    completed = subprocess.run(
+        [str(python), '-c', 'import platform; print(platform.python_version())'],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def _resolve_python(executable):
+    candidate = Path(executable).expanduser()
+    if candidate.is_absolute() or candidate.parent != Path('.'):
+        resolved = candidate.absolute()
+    else:
+        discovered = shutil.which(executable)
+        if discovered is None:
+            raise RuntimeError(f'Bootstrap Python does not exist: {executable}')
+        resolved = Path(discovered).absolute()
+    if not resolved.is_file():
+        raise RuntimeError(f'Bootstrap Python does not exist: {resolved}')
+    return resolved
+
+
+def _validate_oracle(oracle, revision, expected_python):
     python = oracle / 'venv/bin/python'
     if not python.is_file():
         raise RuntimeError(f'Temporary oracle has no Python executable: {python}')
@@ -65,6 +102,33 @@ def _validate_oracle(oracle, revision):
         )
     if _git_status(oracle):
         raise RuntimeError(f'Oracle worktree must be clean: {oracle}')
+    actual_python = _python_version(python)
+    if actual_python != expected_python:
+        raise RuntimeError(
+            f'Temporary oracle uses Python {actual_python}, expected {expected_python}'
+        )
+
+
+def _validate_report_environments(oracle_report, target_report, expected_python):
+    expected_oracle = {
+        'mistune': ORACLE_MISTUNE_VERSION,
+        'python': expected_python,
+        'sdiff': ORACLE_SDIFF_VERSION,
+    }
+    actual_oracle = oracle_report['environment']
+    for key, expected in expected_oracle.items():
+        actual = actual_oracle.get(key)
+        if actual != expected:
+            raise RuntimeError(
+                f'Oracle environment {key} must be {expected}; found {actual}'
+            )
+
+    actual_target_python = target_report['environment'].get('python')
+    if actual_target_python != expected_python:
+        raise RuntimeError(
+            f'Target environment must use Python {expected_python}; '
+            f'found {actual_target_python}'
+        )
 
 
 def _remove_oracle(target):
@@ -82,8 +146,32 @@ def _remove_oracle(target):
     subprocess.run(['git', 'worktree', 'prune'], cwd=target, check=True)
 
 
+def _create_oracle_environment(oracle, bootstrap_python):
+    subprocess.run(
+        [str(bootstrap_python), '-m', 'venv', str(oracle / 'venv')],
+        check=True,
+    )
+    oracle_python = oracle / 'venv/bin/python'
+    subprocess.run(
+        [
+            str(oracle_python),
+            '-m',
+            'pip',
+            'install',
+            f'mistune=={ORACLE_MISTUNE_VERSION}',
+        ],
+        cwd=oracle,
+        check=True,
+    )
+    subprocess.run(
+        [str(oracle_python), '-m', 'pip', 'install', '--no-deps', '-e', '.'],
+        cwd=oracle,
+        check=True,
+    )
+
+
 @contextmanager
-def _prepared_oracle(target, revision, bootstrap_python):
+def _prepared_oracle(target, revision, bootstrap_python, expected_python):
     _remove_oracle(target)
     print(f'Creating fresh Mistune oracle at {ORACLE_DIR}', flush=True)
     try:
@@ -92,11 +180,8 @@ def _prepared_oracle(target, revision, bootstrap_python):
             cwd=target,
             check=True,
         )
-        subprocess.run(
-            ['make', '-C', str(ORACLE_DIR), 'env', f'BOOTSTRAP_PYTHON={bootstrap_python}'],
-            check=True,
-        )
-        _validate_oracle(ORACLE_DIR, revision)
+        _create_oracle_environment(ORACLE_DIR, bootstrap_python)
+        _validate_oracle(ORACLE_DIR, revision, expected_python)
         yield ORACLE_DIR
     finally:
         _remove_oracle(target)
@@ -104,8 +189,11 @@ def _prepared_oracle(target, revision, bootstrap_python):
 
 
 def _write_golden_fixtures(path, oracle_report, oracle_revision, cases, corpus):
-    if oracle_report['environment']['mistune'] != '0.8.4':
-        raise ValueError('Golden fixtures may only be generated from Mistune 0.8.4')
+    if oracle_report['environment']['mistune'] != ORACLE_MISTUNE_VERSION:
+        raise ValueError(
+            f'Golden fixtures may only be generated from Mistune '
+            f'{ORACLE_MISTUNE_VERSION}'
+        )
     oracle_environment = dict(oracle_report['environment'])
     oracle_environment['revision'] = oracle_revision
     manifest = {
@@ -141,6 +229,7 @@ def main():
     argument_parser = argparse.ArgumentParser()
     argument_parser.add_argument('--oracle-revision', required=True)
     argument_parser.add_argument('--bootstrap-python', default='python3.11')
+    argument_parser.add_argument('--expected-python', required=True)
     argument_parser.add_argument('--target', type=Path, default=default_target)
     argument_parser.add_argument(
         '--corpus',
@@ -152,14 +241,23 @@ def main():
     args = argument_parser.parse_args()
 
     target = args.target.resolve()
+    resolved_oracle_revision = _resolve_revision(target, args.oracle_revision)
+    bootstrap_python = _resolve_python(args.bootstrap_python)
+    bootstrap_version = _python_version(bootstrap_python)
+    if bootstrap_version != args.expected_python:
+        raise RuntimeError(
+            f'Bootstrap Python is {bootstrap_version}, expected {args.expected_python}: '
+            f'{bootstrap_python}'
+        )
     reporter = target / 'scripts/mistune_compat_reporter.py'
     corpus = json.loads(args.corpus.read_text(encoding='utf-8'))
     cases = expand_cases(args.corpus, target)
 
     with _prepared_oracle(
         target,
-        args.oracle_revision,
-        args.bootstrap_python,
+        resolved_oracle_revision,
+        bootstrap_python,
+        args.expected_python,
     ) as prepared_oracle:
         with tempfile.TemporaryDirectory(prefix='sdiff-mistune-compat-') as temp_dir:
             expanded_cases = Path(temp_dir) / 'cases.json'
@@ -172,17 +270,22 @@ def main():
             )
             target_report = _run_report(target / 'venv/bin/python', reporter, target, expanded_cases)
 
-        if oracle_report['environment']['mistune'] != '0.8.4':
-            raise RuntimeError(
-                'Oracle environment must use Mistune 0.8.4; found '
-                f'{oracle_report["environment"]["mistune"]}'
-            )
+        _validate_oracle(
+            prepared_oracle,
+            resolved_oracle_revision,
+            args.expected_python,
+        )
+        _validate_report_environments(
+            oracle_report,
+            target_report,
+            args.expected_python,
+        )
 
         if args.write_golden_fixtures:
             _write_golden_fixtures(
                 args.write_golden_fixtures,
                 oracle_report,
-                _git_revision(prepared_oracle),
+                resolved_oracle_revision,
                 cases,
                 corpus,
             )

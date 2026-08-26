@@ -66,9 +66,15 @@ make mistune-compat
 ```
 
 The Make target always starts fresh. It removes any stale oracle state at
-`/tmp/html-structure-diff-mistune-084-oracle`, creates a detached pre-port checkout there, builds an isolated Python
-3.11 environment with Mistune 0.8.4, runs the comparison, and removes the oracle again. No reusable oracle setup is
-required, and a partially cleaned `/tmp` directory is never trusted.
+`/tmp/html-structure-diff-mistune-084-oracle`, creates a detached checkout of the permanent pre-port master commit
+`12e7782208e4b458c8c4242882fda2377d9cba6b`, and removes the oracle again after the comparison. The runner uses the
+target's absolute Python 3.11.13 interpreter to create a fresh oracle venv, then independently installs exactly
+`mistune==0.8.4` and that checkout's `sdiff==1.0.0`; it does not trust the historical Makefile or any partially
+cleaned `/tmp` state.
+
+Before comparing results, the runner verifies the exact oracle Git revision, a clean oracle worktree, Python
+3.11.13, Mistune 0.8.4, and sdiff 1.0.0. It also verifies that the target report was produced with Python 3.11.13.
+No reusable oracle setup is required.
 
 Success ends with:
 
@@ -80,8 +86,9 @@ The command runs each checkout with its own `venv`, compares normalized parser, 
 nonzero with unified result diffs when behavior differs.
 
 Only refresh the committed Golden Mistune 0.8.4 Fixtures after deliberately changing and reviewing the compatibility
-corpus. The refresh is generated from the 0.8.4 worktree, not from the target implementation, and refuses any other
-oracle Mistune version:
+corpus. The refresh is generated from the verified permanent master oracle, not from the target implementation. The
+regular test suite asserts the fixture's oracle revision, Python, Mistune, and sdiff versions so provenance drift is
+visible:
 
 ```sh
 make mistune-compat-refresh

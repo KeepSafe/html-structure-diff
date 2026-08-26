@@ -20,6 +20,9 @@ COMPATIBILITY_CORPUS = REPO_ROOT / 'tests/fixtures/compatibility/mistune_cases.j
 GOLDEN_MISTUNE_084_FIXTURES = (
     REPO_ROOT / 'tests/fixtures/compatibility/golden_mistune_084_fixtures.json'
 )
+MISTUNE_ORACLE_REVISION = '12e7782208e4b458c8c4242882fda2377d9cba6b'
+MISTUNE_ORACLE_PYTHON = '3.11.13'
+MISTUNE_ORACLE_SDIFF = '1.0.0'
 
 
 class TestLegacyMistuneBehaviorContract(TestCase):
@@ -356,6 +359,9 @@ class TestGoldenMistune084Fixtures(TestCase):
         case_names = [case['name'] for case in self.cases]
         self.assertEqual(1, self.expected['schema_version'])
         self.assertEqual('0.8.4', self.expected['oracle']['mistune'])
+        self.assertEqual(MISTUNE_ORACLE_PYTHON, self.expected['oracle']['python'])
+        self.assertEqual(MISTUNE_ORACLE_REVISION, self.expected['oracle']['revision'])
+        self.assertEqual(MISTUNE_ORACLE_SDIFF, self.expected['oracle']['sdiff'])
         self.assertEqual(self.expected['case_count'], len(self.cases))
         self.assertEqual(len(case_names), len(set(case_names)))
         self.assertEqual(set(self.expected['cases']), set(case_names))

@@ -9,7 +9,8 @@ PYTEST=venv/bin/pytest
 FLAKE=venv/bin/flake8
 PIP_COMPILE=venv/bin/pip-compile
 RG=rg
-MISTUNE_ORACLE_REV?=a73f7122421a08c380b87c38fccfe8b54d169cb9
+SDIFF_MISTUNE_084_ORACLE_REV?=12e7782208e4b458c8c4242882fda2377d9cba6b
+MISTUNE_ORACLE_PYTHON?=$(abspath $(PYTHON))
 MISTUNE_GOLDEN_FIXTURES=tests/fixtures/compatibility/golden_mistune_084_fixtures.json
 
 PYTEST_SHARED_FLAGS=-s --durations=3 --durations-min=0.005
@@ -90,12 +91,12 @@ depcheck:
 	$(PIP) check
 
 mistune-compat:
-	$(PYTHON) scripts/run_mistune_compat.py --oracle-revision "$(MISTUNE_ORACLE_REV)" \
-		--bootstrap-python "$(BOOTSTRAP_PYTHON)" --target .
+	$(PYTHON) scripts/run_mistune_compat.py --oracle-revision "$(SDIFF_MISTUNE_084_ORACLE_REV)" \
+		--bootstrap-python "$(MISTUNE_ORACLE_PYTHON)" --expected-python "$(PYTHON_VERSION)" --target .
 
 mistune-compat-refresh:
-	$(PYTHON) scripts/run_mistune_compat.py --oracle-revision "$(MISTUNE_ORACLE_REV)" \
-		--bootstrap-python "$(BOOTSTRAP_PYTHON)" --target . \
+	$(PYTHON) scripts/run_mistune_compat.py --oracle-revision "$(SDIFF_MISTUNE_084_ORACLE_REV)" \
+		--bootstrap-python "$(MISTUNE_ORACLE_PYTHON)" --expected-python "$(PYTHON_VERSION)" --target . \
 		--write-golden-fixtures $(MISTUNE_GOLDEN_FIXTURES)
 
 requirements: dev

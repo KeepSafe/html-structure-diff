@@ -1098,8 +1098,8 @@
   "oracle": {
     "mistune": "0.8.4",
     "python": "3.11.13",
-    "revision": "a73f7122421a08c380b87c38fccfe8b54d169cb9",
-    "sdiff": "2.0.0"
+    "revision": "12e7782208e4b458c8c4242882fda2377d9cba6b",
+    "sdiff": "1.0.0"
   },
   "schema_version": 1
 }

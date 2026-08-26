@@ -51,18 +51,23 @@ structural-diff, and link-diff outputs for 13 compact Mistune 0.8.4 scenarios. T
 HTML, heading styles, lists, images and reference links, hard breaks and directional marks, link-count changes,
 insert/delete symmetry, and nested Zendesk constructs.
 
-`scripts/run_mistune_compat.py` runs the frozen 0.8.4 worktree and this 3.3.4 worktree in isolated virtual
-environments. The runner expands 66 committed corpus entries, all 13 golden cases, all 12 automatically discovered
-Markdown fixture pairs, and 1,000 fixed-seed structured fuzz pairs for 1,091 named comparisons. Four aggregate corpus
-entries check another 329,200 short link/image label and destination combinations, 52,272 generated inline-rule
-operations, and 643 generated block-facade operations. The runner compares recursive ASTs, exact text/HTML rendering,
-structural and link diff results, mutated parser state, and phase-specific exception signatures.
+`scripts/run_mistune_compat.py` runs permanent pre-port master commit
+`12e7782208e4b458c8c4242882fda2377d9cba6b` and this 3.3.4 worktree in isolated virtual environments. The runner
+creates the oracle from scratch under `/tmp` with the target's absolute Python 3.11.13 interpreter, installs exactly
+Mistune 0.8.4 plus the historical sdiff 1.0.0 checkout independently of its Makefile, and verifies the Git revision,
+clean worktree, Python, Mistune, and sdiff provenance before accepting results. It expands 66 committed corpus
+entries, all 13 golden cases, all 12 automatically discovered Markdown fixture pairs, and 1,000 fixed-seed structured
+fuzz pairs for 1,091 named comparisons. Four aggregate corpus entries check another 329,200 short link/image label and
+destination combinations, 52,272 generated inline-rule operations, and 643 generated block-facade operations. The
+runner compares recursive ASTs, exact text/HTML rendering, structural and link diff results, mutated parser state, and
+phase-specific exception signatures.
 
 Normal `make test` recomputes every target result against the Golden Mistune 0.8.4 Fixtures at
 `tests/fixtures/compatibility/golden_mistune_084_fixtures.json`. This compact expected-results file is generated only
-from the frozen 0.8.4 implementation, so the normal suite retains the complete parity proof without requiring another
-worktree. `make mistune-compat` provides readable full-result diffs, and `make mistune-compat-refresh` deliberately
-refreshes the golden fixtures after an approved corpus change.
+from that permanent 0.8.4 oracle, and the test suite pins its revision and environment metadata, so the normal suite
+retains the complete parity proof without requiring another worktree. `make mistune-compat` provides readable
+full-result diffs, and `make mistune-compat-refresh` deliberately refreshes the golden fixtures after an approved
+corpus change.
 
 ## Downstream Consumers
 
@@ -239,6 +244,8 @@ Completed applicable work:
 - Ported the parser from removed Mistune 0.8 lexer APIs to a Mistune 3.3.4 compatibility adapter.
 - Added a dual-worktree exact-signature harness, self-contained Golden Mistune 0.8.4 Fixtures, expanded
   curated/fuzz/exhaustive link matrices, and target-side parity unit tests.
+- Anchored the live oracle to the permanent pre-port master commit, made its Python 3.11.13 environment entirely
+  runner-owned, and added exact revision/runtime/package provenance plus stale `/tmp` cleanup checks.
 - Fixed a review-discovered `InlineLexer` explicit-rule mismatch and replaced the first nested-label scanner after
   exhaustive testing exposed Mistune 0.8 greedy-label edge cases.
 - Restored the remaining sdiff-authored autolink/URL rules and the inherited callable block-rule facade, including
@@ -257,10 +264,10 @@ Proof results:
 | `make ci-dev-install` | Pass | CI bootstrap installed/reused the exact-version venv and final `.[dev]` dependency shape. |
 | full skill pyupgrade ladder over `sdiff` and `tests` | Pass | All six stages were reconfirmed live with zero remaining changes; the earlier Python 3.6 stage changes are isolated in commit `7c78ad3`. |
 | `make requirements` twice | Pass | Both pip-compile outputs were byte-stable; compile tooling is `pip-tools==7.5.3` with `pip==25.3`. |
-| `make test` | Pass | Flake8 and msgpack guard passed; 83 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures. |
-| `make coverage` | Pass | Total branch-aware coverage is 99%; `sdiff/parser.py` has 100% statement and 99% branch coverage. |
+| `make test` | Pass | Flake8 and msgpack guard passed; 95 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures and oracle-runner hardening tests. |
+| `make coverage` | Pass | Total branch-aware coverage is 99%; `sdiff/parser.py` has 100% statement and 99% branch coverage, and the oracle runner has 96%. |
 | `make fixture-smoke` | Pass | 3 test methods and 12 fixture subtests passed, including the exact golden snapshot. |
-| `make mistune-compat` | Pass | Mistune 0.8.4 oracle vs 3.3.4 target: 1,091 named cases, 0 mismatches; matrices add 329,200 link/image inputs, 52,272 inline-rule operations, and 643 block-facade operations. |
+| `make mistune-compat` | Pass | A fresh `/tmp` oracle at permanent master commit `12e7782`, with Python 3.11.13, `sdiff==1.0.0`, and `mistune==0.8.4`, matched the 3.3.4 target across 1,091 named cases with 0 mismatches; post-run cleanup succeeded. |
 | direct-link endpoint oracle sweep | Pass | 1,921,600 exhaustive tails through length seven plus 500,000 deterministic randomized inputs matched Mistune 0.8.4 with zero mismatches. |
 | malformed-link bounded-time regression | Pass | 16,000 nested link and image openers complete in about 0.03 seconds each; the test ceiling is 2 seconds. |
 | `make import-smoke` | Pass | Imported documented public API and printed `2.0.0 MdParser ZendeskHelpMdParser TextRenderer`. |
@@ -270,7 +277,7 @@ Proof results:
 | `rm -rf dist && venv/bin/python -m build .` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl` without invoking the publishing targets. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |
 | sdist content listing | Pass | Archive contains all tests, compatibility helpers, same/different Markdown fixtures, golden JSON, and Golden Mistune 0.8.4 Fixtures. |
-| extracted-sdist test suite | Pass | All 78 tests and 1,129 subtests passed directly from the unpacked source archive. |
+| extracted-sdist test suite | Pass | All 95 tests and 1,146 subtests passed directly from the unpacked source archive, including runner tests that create their own disposable Git fixtures. |
 | isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
 | CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
 | PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `5ebec5545ba6df34942403c9afd73fc87b471c49`. |
