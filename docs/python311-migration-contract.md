@@ -190,8 +190,8 @@ Expected evidence:
 - Runtime metadata and both generated requirement files now agree on `mistune==3.3.4`.
 - Mistune 3 removed the `BlockLexer`, `InlineLexer`, and private grammar constants used by the old implementation.
   The adapter owns sdiff's intentionally narrow default block/list/text grammar locally, retains the explicitly
-  callable legacy rule facade, uses Mistune 3's hardened inline link parser surface, and emits the existing sdiff
-  model directly.
+  callable legacy rule facade, and emits the existing sdiff model directly. It exercises Mistune 3's inline link
+  parser as a non-authoritative compatibility probe; the probe's return and tokens do not determine sdiff output.
 - The adapter preserves smart entity escaping, literal unsupported Markdown, raw link/image source, unresolved
   reference links, legacy list shapes, inline-vs-block HTML classification, and recursive Zendesk tags.
 - The adapter honors direct `InlineLexer.parse(..., rules=...)` rule ordering for links, reference links, autolinks,
@@ -202,7 +202,8 @@ Expected evidence:
   Mistune implementation classes; no indexed downstream consumer relies on that private inheritance surface.
 - The legacy nested-label and destination grammar is compiled into a linear-time index. This preserves 0.8.4's
   unusual greedy/backtracking boundaries, including quoted titles containing `)` and angle-destination fallback,
-  while eliminating repeated suffix scans on malformed nested openers.
+  while eliminating repeated suffix scans on malformed nested openers. This local index—not Mistune 3's probe—is
+  authoritative for link and image boundaries.
 - The port removes the class-level Zendesk rule mutation that could make a later plain `MdParser` call fail. This is
   an intentional target-only defect fix; document outputs remain oracle-identical.
 - Existing compatible hard pins are retained: `coverage==7.6.1` and `flake8==7.1.1`.
@@ -264,7 +265,7 @@ Proof results:
 | `make ci-dev-install` | Pass | CI bootstrap installed/reused the exact-version venv and final `.[dev]` dependency shape. |
 | full skill pyupgrade ladder over `sdiff` and `tests` | Pass | All six stages were reconfirmed live with zero remaining changes; the earlier Python 3.6 stage changes are isolated in commit `7c78ad3`. |
 | `make requirements` twice | Pass | Both pip-compile outputs were byte-stable; compile tooling is `pip-tools==7.5.3` with `pip==25.3`. |
-| `make test` | Pass | Flake8 and msgpack guard passed; 95 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures and oracle-runner hardening tests. |
+| `make test` | Pass | Flake8 and msgpack guard passed; 96 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures, oracle-runner hardening, and non-authoritative Mistune 3 probe coverage. |
 | `make coverage` | Pass | Total branch-aware coverage is 99%; `sdiff/parser.py` has 100% statement and 99% branch coverage, and the oracle runner has 96%. |
 | `make fixture-smoke` | Pass | 3 test methods and 12 fixture subtests passed, including the exact golden snapshot. |
 | `make mistune-compat` | Pass | A fresh `/tmp` oracle at permanent master commit `12e7782`, with Python 3.11.13, `sdiff==1.0.0`, and `mistune==0.8.4`, matched the 3.3.4 target across 1,091 named cases with 0 mismatches; post-run cleanup succeeded. |
@@ -277,7 +278,7 @@ Proof results:
 | `rm -rf dist && venv/bin/python -m build .` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl` without invoking the publishing targets. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |
 | sdist content listing | Pass | Archive contains all tests, compatibility helpers, same/different Markdown fixtures, golden JSON, and Golden Mistune 0.8.4 Fixtures. |
-| extracted-sdist test suite | Pass | All 95 tests and 1,146 subtests passed directly from the unpacked source archive, including runner tests that create their own disposable Git fixtures. |
+| extracted-sdist test suite | Pass | All 96 tests and 1,149 subtests passed directly from the unpacked source archive, including runner tests that create their own disposable Git fixtures. |
 | isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
 | CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
 | PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `5ebec5545ba6df34942403c9afd73fc87b471c49`. |

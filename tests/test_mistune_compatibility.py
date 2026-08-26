@@ -292,6 +292,21 @@ class TestLegacyMistuneBehaviorContract(TestCase):
         build_indexes.assert_called_once_with('[x](url)')
         self.assertEqual([('[x](url)', Link)], [(node.text, type(node)) for node in nodes])
 
+    def test_modern_link_parser_probe_cannot_change_legacy_link_boundaries(self):
+        source = '[label](url)'
+        for probe_result in (None, 1, len(source) + 100):
+            with self.subTest(probe_result=probe_result):
+                with patch.object(
+                    parser._ModernLinkParserProbe,
+                    'parse_link',
+                    return_value=probe_result,
+                ) as probe:
+                    tree = parser.parse(source)
+                probe.assert_called_once()
+                self.assertEqual('pa', tree.print_all())
+                self.assertIsInstance(tree.nodes[0].nodes[0], Link)
+                self.assertEqual(source, tree.nodes[0].nodes[0].text)
+
     def test_parser_instances_reuse_the_legacy_token_list(self):
         block_parser = MdParser()
         first_block_result = block_parser.parse('# first')

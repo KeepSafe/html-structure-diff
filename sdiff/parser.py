@@ -124,8 +124,8 @@ class _BlockGrammar:
     text = re.compile(r'^[^\n]+')
 
 
-class _HardenedLinkParser(mistune.InlineParser):
-    """Use Mistune 3's bounded link scanner without its rendering semantics."""
+class _ModernLinkParserProbe(mistune.InlineParser):
+    """Exercise Mistune 3 without making it authoritative for legacy output."""
 
     def precedence_scan(self, match, state, end_pos, rules=None):
         return None
@@ -288,7 +288,7 @@ class InlineLexer:
         self.links = {}
         self.tokens = []
         self.rules = _InlineGrammar()
-        self._link_parser = _HardenedLinkParser()
+        self._link_parser_probe = _ModernLinkParserProbe()
 
     def __call__(self, text, rules=None):
         return self.parse(text, rules)
@@ -333,11 +333,12 @@ class InlineLexer:
                         end_position = reference_link_ends[opener_end]
                     if end_position is not None:
                         opener = _LINK_OPENER.match(text, position)
-                        # Exercise Mistune 3's hardened parser for syntax it
-                        # accepts; the local boundary remains authoritative for
-                        # legacy raw-source compatibility.
+                        # Exercise the installed Mistune 3 parser as a
+                        # non-authoritative compatibility probe. Its return and
+                        # tokens are intentionally ignored: only the local
+                        # linear-time index owns the Mistune 0.8 boundary.
                         assert modern_state is not None
-                        self._link_parser.parse_link(opener, modern_state)
+                        self._link_parser_probe.parse_link(opener, modern_state)
                         source = text[position:end_position]
                         self.tokens.append(Image(source) if source[0] == '!' else Link(source))
                         position = end_position
