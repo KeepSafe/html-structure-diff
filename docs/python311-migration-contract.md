@@ -52,11 +52,11 @@ HTML, heading styles, lists, images and reference links, hard breaks and directi
 insert/delete symmetry, and nested Zendesk constructs.
 
 `scripts/run_mistune_compat.py` runs the frozen 0.8.4 worktree and this 3.3.4 worktree in isolated virtual
-environments. The runner expands 64 committed corpus entries, all 13 golden cases, all 12 automatically discovered
-Markdown fixture pairs, and 1,000 fixed-seed structured fuzz pairs for 1,089 named comparisons. Two aggregate corpus
-entries exhaustively check another 329,200 short link/image label and destination combinations. The runner compares
-recursive ASTs, exact text/HTML rendering, structural and link diff results, mutated metadata, and phase-specific
-exception signatures.
+environments. The runner expands 66 committed corpus entries, all 13 golden cases, all 12 automatically discovered
+Markdown fixture pairs, and 1,000 fixed-seed structured fuzz pairs for 1,091 named comparisons. Four aggregate corpus
+entries check another 329,200 short link/image label and destination combinations, 52,272 generated inline-rule
+operations, and 643 generated block-facade operations. The runner compares recursive ASTs, exact text/HTML rendering,
+structural and link diff results, mutated parser state, and phase-specific exception signatures.
 
 Normal `make test` recomputes every target result against the Golden Mistune 0.8.4 Fixtures at
 `tests/fixtures/compatibility/golden_mistune_084_fixtures.json`. This compact expected-results file is generated only
@@ -184,12 +184,17 @@ Expected evidence:
 
 - Runtime metadata and both generated requirement files now agree on `mistune==3.3.4`.
 - Mistune 3 removed the `BlockLexer`, `InlineLexer`, and private grammar constants used by the old implementation.
-  The adapter owns the intentionally narrow sdiff block/list/text grammar locally, uses Mistune 3's hardened inline
-  link parser surface, and emits the existing sdiff model directly.
+  The adapter owns sdiff's intentionally narrow default block/list/text grammar locally, retains the explicitly
+  callable legacy rule facade, uses Mistune 3's hardened inline link parser surface, and emits the existing sdiff
+  model directly.
 - The adapter preserves smart entity escaping, literal unsupported Markdown, raw link/image source, unresolved
   reference links, legacy list shapes, inline-vs-block HTML classification, and recursive Zendesk tags.
-- The adapter honors direct `InlineLexer.parse(..., rules=...)` rule ordering and reused-parser token-list identity,
-  matching the exposed 0.8.4 facade behavior.
+- The adapter honors direct `InlineLexer.parse(..., rules=...)` rule ordering for links, reference links, autolinks,
+  and bare URLs. Explicit block rules retain 0.8.4 block-quote/code/table token shapes, definition maps, footnote
+  recursion, post-construction `default_rules` changes, and reused-parser token-list identity.
+- Mistune 0.8's class hierarchy and unrelated private lexer internals are intentionally not recreated. The 2.x
+  compatibility contract covers sdiff's callable parser facade and observable results, not subclassing removed
+  Mistune implementation classes; no indexed downstream consumer relies on that private inheritance surface.
 - The legacy nested-label and destination grammar is compiled into a linear-time index. This preserves 0.8.4's
   unusual greedy/backtracking boundaries, including quoted titles containing `)` and angle-destination fallback,
   while eliminating repeated suffix scans on malformed nested openers.
@@ -236,6 +241,8 @@ Completed applicable work:
   curated/fuzz/exhaustive link matrices, and target-side parity unit tests.
 - Fixed a review-discovered `InlineLexer` explicit-rule mismatch and replaced the first nested-label scanner after
   exhaustive testing exposed Mistune 0.8 greedy-label edge cases.
+- Restored the remaining sdiff-authored autolink/URL rules and the inherited callable block-rule facade, including
+  exact raw token dictionaries, definition state, footnote recursion, and mutable default-rule behavior.
 - Ran the full skill ladder. The `--py36-plus` stage converted one list-rendering format call and two parser regex
   format calls to f-strings; Python 3.7 through 3.11 stages were no-ops. Golden outputs remained unchanged.
 - Review found that the first sdist omitted fixture data, and the expanded parity suite exposed missing test helper
@@ -250,15 +257,15 @@ Proof results:
 | `make ci-dev-install` | Pass | CI bootstrap installed/reused the exact-version venv and final `.[dev]` dependency shape. |
 | full skill pyupgrade ladder over `sdiff` and `tests` | Pass | All six stages were reconfirmed live with zero remaining changes; the earlier Python 3.6 stage changes are isolated in commit `7c78ad3`. |
 | `make requirements` twice | Pass | Both pip-compile outputs were byte-stable; compile tooling is `pip-tools==7.5.3` with `pip==25.3`. |
-| `make test` | Pass | Flake8 and msgpack guard passed; 78 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures. |
+| `make test` | Pass | Flake8 and msgpack guard passed; 83 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures. |
 | `make coverage` | Pass | Total branch-aware coverage is 99%; `sdiff/parser.py` has 100% statement and 99% branch coverage. |
 | `make fixture-smoke` | Pass | 3 test methods and 12 fixture subtests passed, including the exact golden snapshot. |
-| `make mistune-compat` | Pass | Mistune 0.8.4 oracle vs 3.3.4 target: 1,089 named cases, 0 mismatches; aggregate matrix cases cover 329,200 additional link/image combinations. |
+| `make mistune-compat` | Pass | Mistune 0.8.4 oracle vs 3.3.4 target: 1,091 named cases, 0 mismatches; matrices add 329,200 link/image inputs, 52,272 inline-rule operations, and 643 block-facade operations. |
 | direct-link endpoint oracle sweep | Pass | 1,921,600 exhaustive tails through length seven plus 500,000 deterministic randomized inputs matched Mistune 0.8.4 with zero mismatches. |
 | malformed-link bounded-time regression | Pass | 16,000 nested link and image openers complete in about 0.03 seconds each; the test ceiling is 2 seconds. |
 | `make import-smoke` | Pass | Imported documented public API and printed `2.0.0 MdParser ZendeskHelpMdParser TextRenderer`. |
 | `make depcheck` | Pass | `pip check` found no broken requirements. |
-| `CI=1 make test-only` | Pass | 78 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
+| `CI=1 make test-only` | Pass | 83 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
 | `venv/bin/python -m compileall -q sdiff tests scripts` | Pass | Source, tests, and compatibility scripts compiled on Python 3.11.13. |
 | `rm -rf dist && venv/bin/python -m build .` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl` without invoking the publishing targets. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |

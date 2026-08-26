@@ -1,12 +1,12 @@
 {
-  "case_count": 1089,
+  "case_count": 1091,
   "cases": {
     "atx_headings": "f7be5be83689cf22dd77489d41ab7881d1f92fdcce915578c47bbd31932410e3",
     "autolinks_and_bare_urls_are_text": "f01bbeae321bf5357c645c236c0b81689c320f22111ebc28e7419984925f4a4e",
     "block_html_and_comment": "f65d31151146abb7f3810f92f3412ea2d725239ac7ee78920778cb7f8991bbc8",
     "block_html_template_attributes": "44cf0cdb2c9d5e484ae8b9713d4b845c9c3cdfd0eba0dec86d82db9f5ac1bb0b",
     "block_parser_reuse": "43af3a2315aec3bb6aed336165dfdaad94fe24b7f2321db215ed06b700e1349a",
-    "block_rule_selection": "e37c103226a6c9865cb87c6718df6fc8cc5c890f32386467d22c80f1557d1f8e",
+    "block_rule_selection": "f99d2fe0e7429302a843227b0807ac0da3d1682b3cfcf79bba74d9750342be89",
     "block_syntax_stays_text": "5a859a8c09aac078ddaa24064cb1df7c81e073b3bc9f1b689aa228521250214e",
     "closing_and_excess_heading_markers": "13d72f13ddaefe0298892e8da20477f2c439f3b0145ddac1362d704cd71259a1",
     "deep_unmatched_link_openers": "b6e7eceddc289682d737b51cfd6f79afd57ce3733222b767296cc234516b0659",
@@ -15,6 +15,8 @@
     "empty_and_unclosed_images": "9e1a345d0d80b3dec00dfd66e77195c1d3aaa0768f2c9f40f72f353baf7dfb93",
     "exhaustive_link_label_matrix": "f891cf17d584b865562e6a30af596854701f680c0d3809f1956b508ab01d9286",
     "exhaustive_link_tail_matrix": "d708a48837c65b76b9d59b013c8620268b600fe0da6ef04d80ae179709f686bc",
+    "explicit_block_rule_matrix": "342521a5d4d5bf0eb2b07f7c67a4eec62c2932c5e610ec6112e7bffe0e7409c6",
+    "explicit_inline_rule_matrix": "01eb613f714ec496c394252d1e86f497e84e25b3d20efb2e4a39bd25e2b1f817",
     "fixture_tests_fixtures_different_extra_paragraph": "4f4044ad3694fac516bb4fb8697b29efde888dbb0aae6b87b370255a460bf4f1",
     "fixture_tests_fixtures_different_zendesk_callout_in_tabs": "4d63ca718729a84c5d63bc618d7379a88ee528366863bec242a598c1b95d0c93",
     "fixture_tests_fixtures_different_zendesk_steps": "30dfb15eb7a6be8f4dd84f684725bc54d254b5401f826ade737600fb7c3dc3cb",
@@ -1049,7 +1051,7 @@
     "image_titles_with_closing_parentheses": "8e330e422c141af716981538d092cb7cfa914ee1db1d6c1429189d34bcd7085b",
     "inline_html_is_escaped": "bf38be2ddbcbaac36438d275330de8ce00bf921059a145728b3a614d6d809e56",
     "inline_parser_reuse": "179af2c54a9197e53172b31170b39bde737cd3c4b145ba3160f228f94c1ce85e",
-    "inline_rule_selection": "8ace84d3afff2f3c1c2a06d080fe62941116c2429a6bc4f321c5cfe2c0653b15",
+    "inline_rule_selection": "6001500b4000c39785721fb48dac5f2fa16b282fe201b2d2aa3df6007ff1cbd4",
     "inline_syntax_stays_text": "836724aea14b615d69c6497533e7125ec924a44b8ae95f26a12bf9c3f9e6b6a8",
     "leading_and_trailing_blank_lines": "3c33bce6eac82926642c41374ee24a9bdf961f755ad209c47297cf26965ba0ae",
     "legacy_nested_label_atom": "fce97d21836a21e9d8da9d5fd898fb8bb29faaea44ffc440825ddef9cb77b7c2",
@@ -1091,7 +1093,7 @@
     "zendesk_sibling_custom_tags": "5b667bf654ec935f86e14d65150370cb2df867b52ae3965ed59c0b6caf27443b",
     "zendesk_uppercase_and_multiple_styles": "b3983c67f1153e42a6952bdb466654d534a6fad0e2960f4c5455a54949462fe2"
   },
-  "expanded_cases_sha256": "4d46f648a0b58e7e0d5db234bf6ef36d234ca249cdb6945c807ca6c917bc5237",
+  "expanded_cases_sha256": "a30b6f703a4a45039ac9d616a84a7830ba7caac1506f9d4b125214cf3d355152",
   "fuzz_seed": 311084334,
   "oracle": {
     "mistune": "0.8.4",

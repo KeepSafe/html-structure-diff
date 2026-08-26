@@ -142,21 +142,184 @@ def _reused_parser_signature(case, sdiff, parser):
     }
 
 
+def _inline_rule_operation_signature(operation, parser):
+    instance = parser.InlineLexer()
+    parse_method = instance if operation.get('call') else instance.parse
+    return [
+        node_signature(node)
+        for node in parse_method(operation['source'], operation.get('rules'))
+    ]
+
+
+def _block_rule_operation_signature(operation, sdiff, parser_cls_name):
+    instance = getattr(sdiff, parser_cls_name)()
+    if 'default_rules' in operation:
+        instance.default_rules = list(operation['default_rules'])
+    if 'blockquote_depth' in operation:
+        instance._blockquote_depth = operation['blockquote_depth']
+    parse_method = instance if operation.get('call') else instance.parse
+    nodes = [
+        node_signature(node)
+        for node in parse_method(operation['source'], operation.get('rules'))
+    ]
+    return {
+        'nodes': nodes,
+        'def_links': instance.def_links,
+        'def_footnotes': instance.def_footnotes,
+        'default_rules': list(instance.default_rules),
+    }
+
+
 def _rule_selection_signature(case, sdiff, parser):
     results = {}
+    inline_rules = case['scenario'] == 'inline_rule_selection'
     for operation in case['operations']:
-        if case['scenario'] == 'inline_rule_selection':
-            instance = parser.InlineLexer()
+        if inline_rules:
+            results[operation['name']] = capture(
+                lambda item=operation: _inline_rule_operation_signature(item, parser)
+            )
         else:
-            instance = getattr(sdiff, case['parser'])()
-        parse_method = instance if operation.get('call') else instance.parse
-        results[operation['name']] = capture(
-            lambda method=parse_method, item=operation: [
-                node_signature(node)
-                for node in method(item['source'], item.get('rules'))
-            ]
-        )
+            results[operation['name']] = capture(
+                lambda item=operation: _block_rule_operation_signature(
+                    item,
+                    sdiff,
+                    case['parser'],
+                )
+            )
     return results
+
+
+def _operation_matrix_signature(operations, operation_signature):
+    digest = hashlib.sha256()
+    count = 0
+    for operation in operations:
+        signature = capture(lambda item=operation: operation_signature(item))
+        payload = json.dumps(
+            [operation, signature],
+            ensure_ascii=False,
+            separators=(',', ':'),
+            sort_keys=True,
+        ).encode('utf-8')
+        digest.update(len(payload).to_bytes(8, byteorder='big'))
+        digest.update(payload)
+        count += 1
+    return {
+        'case_count': count,
+        'sha256': digest.hexdigest(),
+    }
+
+
+def _inline_rule_matrix_operations():
+    autolink_rules = (
+        ['autolink', 'text'],
+        ['text', 'autolink'],
+        ['autolink'],
+    )
+    for length in range(5):
+        for characters in itertools.product('a@:< >', repeat=length):
+            body = ''.join(characters)
+            sources = (
+                f'<{body}>',
+                f'<{body}>x',
+                f'<{body}><a:b>',
+                f'x<{body}>',
+            )
+            for source in sources:
+                for rules in autolink_rules:
+                    yield {'source': source, 'rules': rules}
+
+    url_rules = (
+        ['url', 'text'],
+        ['text', 'url'],
+        ['url'],
+    )
+    for length in range(5):
+        for characters in itertools.product('a.(),< ', repeat=length):
+            suffix = ''.join(characters)
+            for scheme in ('http://', 'https://'):
+                url = scheme + suffix
+                for source in (url, 'x ' + url):
+                    for rules in url_rules:
+                        yield {'source': source, 'rules': rules}
+
+
+def _block_rule_matrix_operations():
+    def rule_orders(rule):
+        return ([rule, 'text'], ['text', rule])
+
+    for indentation in ('    ', '        '):
+        for body in ('code', 'a\nb', 'code\n\n'):
+            for rules in rule_orders('block_code'):
+                yield {'source': indentation + body, 'rules': rules}
+
+    for marker in ('```', '~~~', '````'):
+        for language in ('', 'python', 'x-y'):
+            for body in ('x', 'a\nb', ' x '):
+                for leading in ('', ' ', '   '):
+                    source = f'{leading}{marker} {language}\n{body}\n{marker}'
+                    for rules in rule_orders('fences'):
+                        yield {'source': source, 'rules': rules}
+
+    for depth in range(1, 9):
+        for body in ('quote', '# heading', '> nested'):
+            source = '> ' * depth + body
+            for blockquote_depth in (0, 6):
+                for rules in rule_orders('block_quote'):
+                    yield {
+                        'source': source,
+                        'rules': rules,
+                        'blockquote_depth': blockquote_depth,
+                    }
+
+    keys = ('A', 'A B', 'A\tB', 'A&B', 'A"B', "A'B")
+    for key in keys:
+        for link in ('/one', 'https://example.test', 'a&b', 'a%20b'):
+            for title in ('', ' "Title"', ' (Title)', ' (Mixed"'):
+                source = f'[{key}]: <{link}>{title}\n'
+                for rules in rule_orders('def_links'):
+                    yield {'source': source, 'rules': rules}
+        yield {
+            'source': f'[{key}]: /one\n[{key.lower()}]: /two\n',
+            'rules': ['def_links', 'text'],
+        }
+
+    footnote_bodies = (
+        'body\n',
+        'first\n    second\n',
+        '\n    ```python\n    print(1)\n    ```\n',
+        '\n    | a | b |\n    |---|:---:|\n    | c | d |\n',
+        '\n    > quote\n',
+        '\n    # heading\n',
+        '\n    * one\n    * two\n',
+        '\n    <div>body</div>\n',
+    )
+    for key in keys:
+        for body in footnote_bodies:
+            source = f'[^{key}]: {body}'
+            for rules in rule_orders('def_footnotes'):
+                yield {'source': source, 'rules': rules}
+        yield {
+            'source': f'[^{key}]: one\n[^{key.lower()}]: two\n',
+            'rules': ['def_footnotes', 'text'],
+        }
+
+    alignments = ('---', ':---', '---:', ':---:')
+    for first_alignment in alignments:
+        for second_alignment in alignments:
+            for leading_pipe, rule in ((True, 'table'), (False, 'nptable')):
+                prefix = '| ' if leading_pipe else ''
+                row_prefix = '| ' if leading_pipe else ''
+                source = (
+                    f'{prefix}a | b |\n'
+                    f'{prefix}{first_alignment}|{second_alignment}|\n'
+                    f'{row_prefix}c\\|d | e |\n'
+                )
+                for rules in rule_orders(rule):
+                    yield {'source': source, 'rules': rules}
+
+    for source in ('# heading', '> quote', '```\ncode\n```'):
+        for default_rules in (['text'], ['heading', 'text'], ['fences', 'text']):
+            yield {'source': source, 'default_rules': default_rules}
 
 
 def _preprocessing_signature(case, sdiff, parser):
@@ -224,6 +387,20 @@ def run_case(case, sdiff, parser, HtmlRenderer, TextRenderer):
         return _matrix_signature(_link_label_matrix_sources(), sdiff, parser)
     if scenario == 'link_tail_matrix':
         return _matrix_signature(_link_tail_matrix_sources(), sdiff, parser)
+    if scenario == 'inline_rule_matrix':
+        return _operation_matrix_signature(
+            _inline_rule_matrix_operations(),
+            lambda operation: _inline_rule_operation_signature(operation, parser),
+        )
+    if scenario == 'block_rule_matrix':
+        return _operation_matrix_signature(
+            _block_rule_matrix_operations(),
+            lambda operation: _block_rule_operation_signature(
+                operation,
+                sdiff,
+                case['parser'],
+            ),
+        )
     if scenario != 'documents':
         raise ValueError(f"Unknown compatibility scenario: {scenario}")
     return _document_signature(case, sdiff, parser, HtmlRenderer, TextRenderer)

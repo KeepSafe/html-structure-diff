@@ -73,7 +73,7 @@ required, and a partially cleaned `/tmp` directory is never trusted.
 Success ends with:
 
 ```text
-Mistune 0.8.4 oracle vs 3.3.4 target: 1089 cases, 0 mismatches
+Mistune 0.8.4 oracle vs 3.3.4 target: 1091 cases, 0 mismatches
 ```
 
 The command runs each checkout with its own `venv`, compares normalized parser, renderer, and diff results, and exits

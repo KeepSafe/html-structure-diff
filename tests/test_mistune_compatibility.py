@@ -163,6 +163,111 @@ class TestLegacyMistuneBehaviorContract(TestCase):
         self.assertEqual([('[x](url)', Link)], [(node.text, type(node)) for node in direct_only])
         self.assertEqual([('[x][ref]', Link)], [(node.text, type(node)) for node in reference_only])
 
+    def test_inline_parser_honors_legacy_autolink_and_url_rules(self):
+        cases = (
+            (
+                '<https://example.test><person@example.test>',
+                ['autolink', 'text'],
+                [
+                    ('<https://example.test>', Link),
+                    ('<person@example.test>', Link),
+                ],
+            ),
+            (
+                'https://example.test/path).',
+                ['url', 'text'],
+                [
+                    ('https://example.test/path', Link),
+                    (').', Text),
+                ],
+            ),
+            (
+                'before <https://example.test>',
+                ['autolink', 'text'],
+                [('before &lt;https://example.test&gt;', Text)],
+            ),
+            (
+                'before https://example.test',
+                ['url', 'text'],
+                [('before https://example.test', Text)],
+            ),
+            (
+                '<https://example.test>',
+                ['text', 'autolink'],
+                [('&lt;https://example.test&gt;', Text)],
+            ),
+            (
+                'https://example.test',
+                ['text', 'url'],
+                [('https://example.test', Text)],
+            ),
+        )
+        for source, rules, expected in cases:
+            with self.subTest(source=source, rules=rules):
+                nodes = parser.InlineLexer().parse(source, rules)
+                self.assertEqual(expected, [(node.text, type(node)) for node in nodes])
+
+    def test_block_parser_honors_legacy_explicit_structural_rules(self):
+        block_quote = MdParser().parse('> quote', ['block_quote', 'text'])
+        nested_quote = MdParser().parse('> > deep', ['block_quote', 'text'])
+        limited_parser = MdParser()
+        limited_parser._blockquote_depth = limited_parser._max_recursive_depth
+        limited_quote = limited_parser.parse('> quote', ['block_quote', 'text'])
+        fenced = MdParser().parse('```python\nprint(1)\n```', ['fences', 'text'])
+        indented = MdParser().parse('    code\n', ['block_code', 'text'])
+        table = MdParser().parse(
+            '| a | b | c | d |\n|---|:---|---:|:---:|\n| w | x | y | z |\n',
+            ['table', 'text'],
+        )
+
+        self.assertEqual({'type': 'block_quote_start'}, block_quote[0])
+        self.assertEqual('quote', block_quote[1].nodes[0].text)
+        self.assertEqual({'type': 'block_quote_end'}, block_quote[2])
+        self.assertEqual('&gt; deep', nested_quote[1].nodes[0].text)
+        self.assertEqual('&gt; quote', limited_quote[1].text)
+        self.assertEqual(
+            {'type': 'code', 'lang': 'python', 'text': 'print(1)'},
+            fenced[0],
+        )
+        self.assertEqual({'type': 'code', 'lang': None, 'text': 'code'}, indented[0])
+        self.assertEqual(
+            {
+                'type': 'table',
+                'header': ['a', 'b', 'c', 'd'],
+                'align': [None, 'left', 'right', 'center'],
+                'cells': [['w', 'x', 'y', 'z']],
+            },
+            table[0],
+        )
+
+    def test_block_parser_preserves_legacy_definition_state(self):
+        link_parser = MdParser()
+        link_nodes = link_parser.parse(
+            '[Docs]: /one\n[docs]: /two\n',
+            ['def_links', 'text'],
+        )
+        footnote_parser = MdParser()
+        footnote_nodes = footnote_parser.parse(
+            '[^Note]: first\n    second\n',
+            ['def_footnotes', 'text'],
+        )
+
+        self.assertEqual([], link_nodes)
+        self.assertEqual(
+            {'docs': {'link': '/two', 'title': None}},
+            link_parser.def_links,
+        )
+        self.assertEqual({'note': 0}, footnote_parser.def_footnotes)
+        self.assertEqual({'type': 'footnote_start', 'key': 'note'}, footnote_nodes[0])
+        self.assertEqual('first\nsecond', footnote_nodes[1].nodes[0].text)
+        self.assertEqual({'type': 'footnote_end', 'key': 'note'}, footnote_nodes[2])
+
+    def test_block_parser_honors_post_construction_default_rule_changes(self):
+        block_parser = MdParser()
+        block_parser.default_rules = ['text']
+        nodes = block_parser.parse('# heading')
+        self.assertEqual([('# heading', Text)], [(node.text, type(node)) for node in nodes])
+
     def test_inline_parser_builds_link_indexes_only_when_link_rules_can_use_them(self):
         skip_cases = (
             ('plain text without a link opener', None),
@@ -218,8 +323,8 @@ class TestLegacyMistuneBehaviorContract(TestCase):
         first = ZendeskHelpMdParser()
         second = ZendeskHelpMdParser()
         self.assertEqual(original_rules, MdParser.default_rules)
-        self.assertIsNot(first._active_rules, second._active_rules)
-        self.assertEqual(['tabs', 'steps', 'callout'], first._active_rules[:3])
+        self.assertIsNot(first.default_rules, second.default_rules)
+        self.assertEqual(['tabs', 'steps', 'callout'], first.default_rules[:3])
         parser.parse('<tabs>one</tabs>', parser_cls=ZendeskHelpMdParser)
         plain = parser.parse('<tabs>one</tabs>', parser_cls=MdParser)
         self.assertNotEqual('tabs', plain.nodes[0].name)
@@ -260,6 +365,8 @@ class TestGoldenMistune084Fixtures(TestCase):
         matrix_counts = {
             'exhaustive_link_label_matrix': 15_624,
             'exhaustive_link_tail_matrix': 313_576,
+            'explicit_inline_rule_matrix': 52_272,
+            'explicit_block_rule_matrix': 643,
         }
         for case in self.cases:
             with self.subTest(case=case['name']):

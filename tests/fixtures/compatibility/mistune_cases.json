@@ -313,6 +313,51 @@
           "rules": ["reflink", "text"]
         },
         {
+          "name": "autolink_rule",
+          "source": "<https://example.test>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "email_autolink_rule",
+          "source": "<person@example.test>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "url_rule",
+          "source": "https://example.test/path",
+          "rules": ["url", "text"]
+        },
+        {
+          "name": "url_trailing_punctuation",
+          "source": "https://example.test/path).",
+          "rules": ["url", "text"]
+        },
+        {
+          "name": "sequential_autolinks",
+          "source": "<a:b><c:d>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "text_precedes_autolink",
+          "source": "<https://example.test>",
+          "rules": ["text", "autolink"]
+        },
+        {
+          "name": "text_precedes_url",
+          "source": "https://example.test",
+          "rules": ["text", "url"]
+        },
+        {
+          "name": "prefixed_autolink_remains_text",
+          "source": "before <a:b>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "prefixed_url_remains_text",
+          "source": "before https://example.test",
+          "rules": ["url", "text"]
+        },
+        {
           "name": "empty_rules_use_defaults",
           "source": "[x](url)",
           "rules": []
@@ -338,6 +383,87 @@
           "source": "# heading",
           "rules": ["heading", "text"],
           "call": true
+        },
+        {
+          "name": "block_quote",
+          "source": "> quote",
+          "rules": ["block_quote", "text"]
+        },
+        {
+          "name": "nested_block_quote",
+          "source": "> > deep",
+          "rules": ["block_quote", "text"]
+        },
+        {
+          "name": "block_quote_recursion_limit",
+          "source": "> quote",
+          "rules": ["block_quote", "text"],
+          "blockquote_depth": 6
+        },
+        {
+          "name": "fenced_code",
+          "source": "```python\nprint(1)\n```",
+          "rules": ["fences", "text"]
+        },
+        {
+          "name": "indented_code",
+          "source": "    code\n",
+          "rules": ["block_code", "text"]
+        },
+        {
+          "name": "pipe_table",
+          "source": "| a | b | c | d |\n|---|:---|---:|:---:|\n| w | x | y | z |\n",
+          "rules": ["table", "text"]
+        },
+        {
+          "name": "no_leading_pipe_table",
+          "source": "a | b\n---|:---:\nc | d\n",
+          "rules": ["nptable", "text"]
+        },
+        {
+          "name": "definition_link",
+          "source": "[Docs]: <https://example.test> \"Title\"\n",
+          "rules": ["def_links", "text"]
+        },
+        {
+          "name": "duplicate_definition_link",
+          "source": "[Docs]: /one\n[docs]: /two\n",
+          "rules": ["def_links", "text"]
+        },
+        {
+          "name": "definition_footnote",
+          "source": "[^Note]: body\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "multiline_definition_footnote",
+          "source": "[^n]: first\n    second\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "fenced_definition_footnote",
+          "source": "[^code]:\n    ```python\n    print(1)\n    ```\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "table_definition_footnote",
+          "source": "[^table]:\n    | a | b |\n    |---|:---:|\n    | c | d |\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "quote_definition_footnote",
+          "source": "[^quote]:\n    > quote\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "duplicate_definition_footnote",
+          "source": "[^n]: one\n[^N]: two\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "mutated_default_rules",
+          "source": "# heading",
+          "default_rules": ["text"]
         },
         {
           "name": "empty_rules_use_defaults",
@@ -373,6 +499,15 @@
     {
       "name": "exhaustive_link_tail_matrix",
       "scenario": "link_tail_matrix"
+    },
+    {
+      "name": "explicit_inline_rule_matrix",
+      "scenario": "inline_rule_matrix"
+    },
+    {
+      "name": "explicit_block_rule_matrix",
+      "scenario": "block_rule_matrix",
+      "parser": "MdParser"
     }
   ]
 }

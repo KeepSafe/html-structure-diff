@@ -20,6 +20,9 @@ _BLOCK_TAG = r'(?!(?:{})\b)\w+(?!:/|[^\w\s@]*@)\b'.format('|'.join(_INLINE_TAGS)
 _VALID_ATTR = r'''\s*[a-zA-Z\-](?:\s*\=\s*(?:"[^"]*"|'[^']*'|[^\s'">]+))?'''
 _SMART_AMP = re.compile(r'&(?!#?\w+;)')
 _LINK_OPENER = re.compile(r'!?\[')
+_BLOCK_CODE_LEADING = re.compile(r'^ {4}', flags=re.M)
+_BLOCK_QUOTE_LEADING = re.compile(r'^ *> ?', flags=re.M)
+_KEY_WHITESPACE = re.compile(r'\s+')
 
 
 def _pure_pattern(pattern):
@@ -32,7 +35,15 @@ def _legacy_escape(text):
     return text.replace('<', '&lt;').replace('>', '&gt;')
 
 
+def _legacy_keyify(key):
+    key = _legacy_escape(key.lower())
+    key = key.replace('"', '&quot;').replace("'", '&#39;')
+    return _KEY_WHITESPACE.sub(' ', key)
+
+
 class _InlineGrammar:
+    autolink = re.compile(r'<([^ >]+(@|:)[^ >]+)>')
+    url = re.compile(r'''(https?:\/\/[^\s<]+[^<.,:;"')\]\s])''')
     linebreak = re.compile(r' {2,}\n(?!\s*$)')
     text = re.compile(r' {1,}\n|[\s\S]+?(?=[\[`~]| {2,}\n|$)')
 
@@ -50,6 +61,7 @@ class _BlockGrammar:
         r')'
     )
     newline = re.compile(r'^\n+')
+    block_code = re.compile(r'^( {4}[^\n]+\n*)+')
     fences = re.compile(
         r'^ *(`{3,}|~{3,}) *([^`\s]+)? *\n'
         r'([\s\S]+?)\s*'
@@ -102,6 +114,12 @@ class _BlockGrammar:
             fr'<({_BLOCK_TAG})((?:{_VALID_ATTR})*?)>([\s\S]+?)<\/\1>',
             fr'<{_BLOCK_TAG}(?:{_VALID_ATTR})*?>',
         )
+    )
+    table = re.compile(
+        r'^ *\|(.+)\n *\|( *[-:]+[-| :]*)\n((?: *\|.*(?:\n|$))*)\n*'
+    )
+    nptable = re.compile(
+        r'^ *(\S.*\|.*)\n *([-:]+ *\|[-| :]*)\n((?:.*\|.*(?:\n|$))*)\n*'
     )
     text = re.compile(r'^[^\n]+')
 
@@ -288,6 +306,14 @@ class InlineLexer:
 
         while position < len(text):
             for rule in active_rules:
+                if rule in ('autolink', 'url'):
+                    link = getattr(self.rules, rule).match(text, position)
+                    if link:
+                        self.tokens.append(Link(link.group(0)))
+                        position = link.end()
+                        break
+                    continue
+
                 if rule == 'linebreak':
                     linebreak = self.rules.linebreak.match(text, position)
                     if linebreak:
@@ -338,15 +364,19 @@ class _CompatibilityBlockLexer:
 
     def _configure_compatibility_lexer(self):
         self.tokens = []
+        self.def_links = {}
+        self.def_footnotes = {}
         self.rules = self.grammar_class()
-        self._active_rules = list(self.default_rules)
+        self._max_recursive_depth = 6
+        self._list_depth = 0
+        self._blockquote_depth = 0
 
     def __call__(self, text, rules=None):
         return self.parse(text, rules)
 
     def parse(self, text, rules=None):
         text = text.rstrip('\n')
-        active_rules = rules or self._active_rules
+        active_rules = rules or self.default_rules
 
         while text:
             for name in active_rules:
@@ -369,6 +399,11 @@ class MdParser(_CompatibilityBlockLexer):
     list_rules = (
         'newline', 'heading', 'lheading',
         'hrule', 'list_block', 'text',
+    )
+    footnote_rules = (
+        'newline', 'block_code', 'fences', 'heading',
+        'nptable', 'lheading', 'hrule', 'block_quote',
+        'list_block', 'block_html', 'table', 'paragraph', 'text',
     )
 
     @classmethod
@@ -407,10 +442,62 @@ class MdParser(_CompatibilityBlockLexer):
     def parse_text(self, match):
         self.tokens.append(Text(_legacy_escape(match.group(0))))
 
+    def parse_block_code(self, match):
+        self.tokens.append({
+            'type': 'code',
+            'lang': None,
+            'text': _BLOCK_CODE_LEADING.sub('', match.group(0)),
+        })
+
+    def parse_fences(self, match):
+        self.tokens.append({
+            'type': 'code',
+            'lang': match.group(2),
+            'text': match.group(3),
+        })
+
     def parse_hrule(self, match):
         # Preserve Mistune 0.8's inherited behavior for a thematic break
         # nested in a list. The compatibility reporter records the exception.
         self.tokens.append({'type': 'hrule'})
+
+    def parse_block_quote(self, match):
+        self.tokens.append({'type': 'block_quote_start'})
+        self._blockquote_depth += 1
+        if self._blockquote_depth > self._max_recursive_depth:
+            self.parse_text(match)
+        else:
+            captured = _BLOCK_QUOTE_LEADING.sub('', match.group(0))
+            self.parse(captured)
+        self.tokens.append({'type': 'block_quote_end'})
+        self._blockquote_depth -= 1
+
+    def parse_def_links(self, match):
+        self.def_links[_legacy_keyify(match.group(1))] = {
+            'link': match.group(2),
+            'title': match.group(3),
+        }
+
+    def parse_def_footnotes(self, match):
+        key = _legacy_keyify(match.group(1))
+        if key in self.def_footnotes:
+            return
+
+        self.def_footnotes[key] = 0
+        self.tokens.append({'type': 'footnote_start', 'key': key})
+
+        text = match.group(2)
+        if '\n' in text:
+            lines = text.split('\n')
+            whitespace = None
+            for line in lines[1:]:
+                space = len(line) - len(line.lstrip())
+                if space and (not whitespace or space < whitespace):
+                    whitespace = space
+            text = '\n'.join([lines[0]] + [line[whitespace:] for line in lines[1:]])
+
+        self.parse(text, self.footnote_rules)
+        self.tokens.append({'type': 'footnote_end', 'key': key})
 
     def parse_list_block(self, match):
         bullet = match.group(2)
@@ -436,6 +523,47 @@ class MdParser(_CompatibilityBlockLexer):
             result.append(node)
         return result
 
+    def parse_table(self, match):
+        item = self._process_table(match)
+        cells = re.sub(r'(?: *\| *)?\n$', '', match.group(3)).split('\n')
+        for index, value in enumerate(cells):
+            value = re.sub(r'^ *\| *| *\| *$', '', value)
+            cells[index] = re.split(r' *(?<!\\)\| *', value)
+        item['cells'] = self._process_cells(cells)
+        self.tokens.append(item)
+
+    def parse_nptable(self, match):
+        item = self._process_table(match)
+        cells = re.sub(r'\n$', '', match.group(3)).split('\n')
+        for index, value in enumerate(cells):
+            cells[index] = re.split(r' *(?<!\\)\| *', value)
+        item['cells'] = self._process_cells(cells)
+        self.tokens.append(item)
+
+    @staticmethod
+    def _process_table(match):
+        header = re.sub(r'^ *| *\| *$', '', match.group(1))
+        header = re.split(r' *\| *', header)
+        align = re.sub(r' *|\| *$', '', match.group(2))
+        align = re.split(r' *\| *', align)
+        for index, value in enumerate(align):
+            if re.search(r'^ *-+: *$', value):
+                align[index] = 'right'
+            elif re.search(r'^ *:-+: *$', value):
+                align[index] = 'center'
+            elif re.search(r'^ *:-+ *$', value):
+                align[index] = 'left'
+            else:
+                align[index] = None
+        return {'type': 'table', 'header': header, 'align': align}
+
+    @staticmethod
+    def _process_cells(cells):
+        for row, line in enumerate(cells):
+            for column, cell in enumerate(line):
+                cells[row][column] = re.sub(r'\\\|', '|', cell)
+        return cells
+
 
 class ZendeskHelpMdParser(MdParser):
     TAG_CONTENT_GROUP = 'tag_content'
@@ -445,17 +573,18 @@ class ZendeskHelpMdParser(MdParser):
 
     def __init__(self):
         super().__init__()
+        self.default_rules = list(self.default_rules)
         self.rules.callout = re.compile(self.TAG_PATTERN.format(
             tag_name='callout',
             attr_re=self.CALLOUT_ATTR_PATTERN,
         ))
-        self._active_rules.insert(0, 'callout')
+        self.default_rules.insert(0, 'callout')
 
         self.rules.steps = re.compile(self.TAG_PATTERN.format(tag_name='steps', attr_re=''))
-        self._active_rules.insert(0, 'steps')
+        self.default_rules.insert(0, 'steps')
 
         self.rules.tabs = re.compile(self.TAG_PATTERN.format(tag_name='tabs', attr_re=''))
-        self._active_rules.insert(0, 'tabs')
+        self.default_rules.insert(0, 'tabs')
 
     def parse_callout(self, match: Match[str]) -> None:
         style = match.group(self.CALLOUT_STYLE_GROUP)
