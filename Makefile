@@ -109,10 +109,12 @@ cov cover:
 	$(COVERAGE) html --directory coverage
 	@echo "Coverage HTML written to coverage/index.html"
 
-package:
-	$(PYTHON) -m build
+package: publish
 
-publish: package
+publish:
+	$(PIP) install -U twine build
+	rm -rf dist
+	$(PYTHON) -m build .
 	$(TWINE) upload --verbose --sign --username developer --repository-url http://$(PYPICLOUD_HOST)/simple/ dist/*.whl
 
 hooks:

@@ -33,6 +33,26 @@ make requirements
 `make requirements` uses `pip-compile` to regenerate `requirements.txt` and `requirements-dev.txt` from
 `pyproject.toml`.
 
+### New release
+
+#### Release
+
+1. Bump the version in `pyproject.toml` and add the release date to `CHANGELOG`.
+2. Commit the changes and merge them to `master`.
+3. `git tag <version>`
+4. `git push origin <version>`
+5. `make publish`
+6. Go to http://10.10.1.143:8080/#/admin, log in with the admin credentials from BE 1Password, select
+   **Rebuild package list**, and wait for completion.
+7. Go to http://10.10.2.107:8080/#/admin, log in with the admin credentials from BE 1Password, select
+   **Rebuild package list**, and wait for completion.
+
+Step 5 builds the wheel and source distribution, then uploads the wheel to the internal PyPI. If `sdiff` code changed,
+a new version must be assigned or the upload will fail. Internal PyPI credentials are required and are available in
+[1Password](https://start.1password.com/open/i?a=RAREY3D7KJDHPFPS5BGKXGA5TI&h=keepsafe.1password.com&i=vsqhjp66yb7r5mg2bb3whwiqg4&v=7frtpxbxiu4bkuqxh5rnechwhi).
+[Twine keyring support](https://twine.readthedocs.io/en/stable/#keyring-support) may also be used.
+`make package` is an alias of `make publish` and performs the same upload workflow.
+
 ### Golden Mistune 0.8.4 Fixtures
 
 Normal development and `make test` do not need an oracle checkout. The regular test suite checks every curated,

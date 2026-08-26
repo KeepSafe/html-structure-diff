@@ -263,6 +263,7 @@ Proof results:
 | extracted-sdist test suite | Pass | All 77 tests and 1,120 subtests passed directly from the unpacked source archive. |
 | isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
 | CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
+| PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `ebb7109261cdddcf72f5ae9907501236ef067767`. |
 | downstream `content-validator` test suite | Pass | 65 tests passed with one expected skip against the local target and Mistune 3.3.4; HTTP was mocked. |
 | `make hooks`, installed-file comparison, `make unhooks` | Pass | Executable pre-push hook installed exactly and was removed after verification. |
 | `git diff --check` | Pass | No whitespace errors. |
@@ -271,9 +272,7 @@ An additional clean run passed all 71 tests on Python 3.11.9 before the exact 3.
 
 ## Known Gaps
 
-- Remote CI is not exercised by default local proof.
 - Downstream `content-validator`, `email-service`, and `translation-real-time-validaton` still need their own
   requirements refresh and integration proof after consuming the merged package state.
 - No 2.x package tag or release has been created. Downstreams must pin the final reviewed immutable tag/commit,
   never the moving branch.
-- The Mistune change has not been committed or pushed; review approval is still required.
