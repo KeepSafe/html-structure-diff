@@ -84,7 +84,8 @@ flows are safe until each downstream repo reruns its own integration proof with 
 
 ## Python and Packaging Target
 
-- Interpreter target: CPython 3.11, with `.python-version` normalized to `3.11.13`
+- Local and CircleCI interpreter target: exact CPython 3.11.13 from `.python-version`
+- Travis compatibility lane: exact CPython 3.11.9, the Python 3.11 patch release available in its Jammy catalog
 - Packaging source of truth: `pyproject.toml`
 - Package version: `2.0.0`
 - Runtime dependencies: exact compatible pins
@@ -125,7 +126,7 @@ Untouched baseline proof on 2026-07-16:
 | --- | --- | --- |
 | Task 1: pyproject, Python 3.11, dependency audit, pyupgrade | Applicable: complete | Replaced legacy packaging, normalized the interpreter target, hard-pinned Mistune, completed and reconfirmed every pyupgrade ladder stage, then removed the one-time tool. |
 | Task 2a: formatting and Flake8 alignment | Applicable: complete | Moved Flake8 and coverage config into `pyproject.toml`, added `flake8-pyproject`, and retained the 120-character convention. |
-| Task 2b: hooks, CI, Makefile, README | Applicable: complete | Normalized package-oriented Makefile targets, retained Python 3.11 Travis, added native CircleCI 2.1 package CI and a pre-push hook. Service launch targets are excluded. |
+| Task 2b: hooks, CI, Makefile, README | Applicable: complete | Normalized package-oriented Makefile targets; made `.python-version` authoritative for exact local/CircleCI bootstrap; pinned the Travis compatibility lane to 3.11.9; made local, Travis, and CircleCI dev installs consume the compiled dev lock; added native CircleCI 2.1 package CI and a pre-push hook. Service launch targets are excluded. |
 | Task 2c: mypy stabilization | Not applicable | The repo has no mypy baseline; introducing a typing program is not required to preserve this library's Python 3.11 behavior. |
 | Task 3: msgpack, redis, asynctest, and nose compatibility | Not applicable | The repo uses pytest and has no msgpack, redis, aioredis, asynctest, or nose dependency/call site. |
 | Task 4: asyncio/aiohttp modernization | Not applicable | No asyncio or aiohttp code exists. |
@@ -155,6 +156,7 @@ Required commands on the final branch:
 - `make env`
 - `make dev`
 - `make ci-dev-install`
+- the `.travis.yml` locked-install sequence in a clean CPython 3.11.9 venv
 - `make requirements`
 - the skill's full `--py36-plus` through `--py311-plus` pyupgrade ladder with `--keep-percent-format`
 - `make lint`
@@ -188,6 +190,9 @@ Expected evidence:
 ## Dependency and Package Notes
 
 - Runtime metadata and both generated requirement files now agree on `mistune==3.3.4`.
+- `pyproject.toml` remains the authoritative direct-dependency declaration; `requirements-dev.txt` is the compiled,
+  transitive development lock consumed by local `make dev`, Travis, and CircleCI. Editable installation uses
+  `--no-deps` after the lock so those environments do not independently resolve `.[dev]`.
 - Mistune 3 removed the `BlockLexer`, `InlineLexer`, and private grammar constants used by the old implementation.
   The adapter owns sdiff's intentionally narrow default block/list/text grammar locally, retains the explicitly
   callable legacy rule facade, and emits the existing sdiff model directly. It exercises Mistune 3's inline link
@@ -232,7 +237,8 @@ on `python311-upgrade`. The final 2.0.0 tag and internal package publication rem
 Completed applicable work:
 
 - Replaced `setup.py` and `setup.cfg` with `pyproject.toml`.
-- Normalized `.python-version` and package/CI policy to Python 3.11.13.
+- Normalized local and CircleCI policy to exact Python 3.11.13 from `.python-version`, with a separately proven
+  Travis compatibility lane on exact Python 3.11.9.
 - Started the Python 3.11-only 2.x release line and preserved public behavior.
 - Hard-pinned the runtime dependency and generated deterministic requirements artifacts with `pip-compile`.
 - Moved Flake8 and coverage configuration into `pyproject.toml`.
@@ -240,7 +246,7 @@ Completed applicable work:
   `requirements`, CI-install, release, and hook targets. `package` intentionally aliases the publishing workflow;
   build-only verification uses `venv/bin/python -m build .` directly.
 - Added native CircleCI 2.1 package jobs with reusable executors/commands for dependency preparation, lint, tests,
-  xUnit, and coverage XML.
+  xUnit, and coverage XML; cache keys include `.python-version`, `pyproject.toml`, and `requirements-dev.txt`.
 - Added exact golden parser/renderer/structural-diff/link-diff snapshots for 13 behavior-sensitive scenarios.
 - Ported the parser from removed Mistune 0.8 lexer APIs to a Mistune 3.3.4 compatibility adapter.
 - Added a dual-worktree exact-signature harness, self-contained Golden Mistune 0.8.4 Fixtures, expanded
@@ -261,8 +267,10 @@ Proof results:
 
 | Command | Result | Evidence |
 | --- | --- | --- |
-| `make clean`; `make env`; `make dev` | Pass | Fresh venv is CPython 3.11.13 with editable `sdiff==2.0.0`, `mistune==3.3.4`, and the locked dev toolchain. |
-| `make ci-dev-install` | Pass | CI bootstrap installed/reused the exact-version venv and final `.[dev]` dependency shape. |
+| `make clean`; `make env`; `make dev` | Pass | The active pyenv-selected Python from `.python-version` created a fresh exact CPython 3.11.13 venv with editable `sdiff==2.0.0`, `mistune==3.3.4`, and the compiled dev lock. |
+| `make ci-dev-install` | Pass | CI bootstrap installed/reused exact Python 3.11.13, consumed `requirements-dev.txt`, and installed the editable package with `--no-deps`. |
+| `.travis.yml` install/test commands in a clean CPython 3.11.9 venv | Pass | The compiled dev lock and editable `--no-deps` install passed `pip check`, all 96 tests, xUnit/coverage XML generation, and the 99% coverage report on 3.11.9. |
+| `make ci-env` with a pre-existing Python 3.11.9 venv | Pass | Make discarded the wrong-patch venv and recreated it as exact Python 3.11.13 from `.python-version`. |
 | full skill pyupgrade ladder over `sdiff` and `tests` | Pass | All six stages were reconfirmed live with zero remaining changes; the earlier Python 3.6 stage changes are isolated in commit `7c78ad3`. |
 | `make requirements` twice | Pass | Both pip-compile outputs were byte-stable; compile tooling is `pip-tools==7.5.3` with `pip==25.3`. |
 | `make test` | Pass | Flake8 and msgpack guard passed; 96 tests passed on Python 3.11.13, including the Golden Mistune 0.8.4 Fixtures, oracle-runner hardening, and non-authoritative Mistune 3 probe coverage. |
@@ -273,14 +281,14 @@ Proof results:
 | malformed-link bounded-time regression | Pass | 16,000 nested link and image openers complete in about 0.03 seconds each; the test ceiling is 2 seconds. |
 | `make import-smoke` | Pass | Imported documented public API and printed `2.0.0 MdParser ZendeskHelpMdParser TextRenderer`. |
 | `make depcheck` | Pass | `pip check` found no broken requirements. |
-| `CI=1 make test-only` | Pass | 83 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
+| `CI=1 make test-only` | Pass | 96 tests passed and wrote `build/test/results.xml` plus `build/coverage/coverage.xml`. |
 | `venv/bin/python -m compileall -q sdiff tests scripts` | Pass | Source, tests, and compatibility scripts compiled on Python 3.11.13. |
 | `rm -rf dist && venv/bin/python -m build .` | Pass | Built isolated `sdiff-2.0.0.tar.gz` and `sdiff-2.0.0-py3-none-any.whl` without invoking the publishing targets. |
 | `venv/bin/twine check dist/*` | Pass | Both distribution artifacts passed metadata/README validation. |
 | sdist content listing | Pass | Archive contains all tests, compatibility helpers, same/different Markdown fixtures, golden JSON, and Golden Mistune 0.8.4 Fixtures. |
 | extracted-sdist test suite | Pass | All 96 tests and 1,149 subtests passed directly from the unpacked source archive, including runner tests that create their own disposable Git fixtures. |
 | isolated wheel install/import/diff smoke | Pass | A separate CPython 3.11.13 venv installed `sdiff==2.0.0` with `mistune==3.3.4` and ran `sdiff.diff()`. |
-| CircleCI validate, `--next`, and config process | Pass | CircleCI accepted the native source `version: 2.1`, strict upcoming-compiler validation, and reusable-config expansion. |
+| CircleCI validate, `--next`, and config process | Pass | CircleCI accepted native source `version: 2.1`, strict upcoming-compiler validation, reusable-config expansion, and v4 cache keys derived from the Python target, dependency declarations, and compiled dev lock. |
 | PR #14 remote CI | Pass | CircleCI `prepare_cache`, `lint`, and `test`, plus Travis CI branch and pull-request builds, passed at `5ebec5545ba6df34942403c9afd73fc87b471c49`. |
 | downstream `content-validator` test suite | Pass | 65 tests passed with one expected skip against the local target and Mistune 3.3.4; HTTP was mocked. |
 | `make hooks`, installed-file comparison, `make unhooks` | Pass | Executable pre-push hook installed exactly and was removed after verification. |

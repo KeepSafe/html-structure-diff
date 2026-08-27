@@ -10,23 +10,25 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}
-            - v3-pip-{{ arch }}
-            - v3-pip-
+            - v4-pip-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-pip-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-pip-{{ arch }}
+            - v4-pip-
       - restore_cache:
           keys:
-            - v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}
-            - v3-venv-{{ arch }}
-            - v3-venv-
+            - v4-venv-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-venv-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-venv-{{ arch }}
+            - v4-venv-
   save_dependency_caches:
     steps:
       - save_cache:
-          key: v3-pip-{{ arch }}-{{ checksum "pyproject.toml" }}
+          key: v4-pip-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - ~/.local
             - ~/.cache
       - save_cache:
-          key: v3-venv-{{ arch }}-{{ checksum "pyproject.toml" }}
+          key: v4-venv-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
           paths:
             - /home/circleci/project/venv
 

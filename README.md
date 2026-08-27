@@ -33,6 +33,13 @@ make requirements
 `make requirements` uses `pip-compile` to regenerate `requirements.txt` and `requirements-dev.txt` from
 `pyproject.toml`.
 
+`make env`, `make dev`, and the CircleCI setup read the exact local/CI interpreter version from `.python-version`.
+They use the active `python`; pyenv automatically selects the file's version during local development, and CircleCI
+provides the same pinned version. `make dev`, Travis, and CircleCI install the compiled
+`requirements-dev.txt` environment, then install this project editable with `--no-deps`. Direct dependency declarations
+remain authoritative in `pyproject.toml`; regenerate the compiled files after changing them. Travis is intentionally a
+Python 3.11.9 compatibility lane because that is the patch release available from its Jammy Python catalog.
+
 ### New release
 
 #### Release

@@ -1,7 +1,7 @@
 # Package development and verification tasks (UNIX only).
 
-PYTHON_VERSION=3.11.13
-BOOTSTRAP_PYTHON?=python3.11
+PYTHON_VERSION_FILE=.python-version
+PYTHON_VERSION=$(strip $(shell cat $(PYTHON_VERSION_FILE)))
 PYTHON=venv/bin/python
 PIP=venv/bin/pip
 COVERAGE=venv/bin/coverage
@@ -30,13 +30,20 @@ build-dir:
 	mkdir -p build/test build/coverage
 
 env:
-	test -d venv || $(BOOTSTRAP_PYTHON) -m venv venv
+	@if [ -d "venv" ] && $(PIP) --version >/dev/null 2>&1 \
+		&& $(PYTHON) -c 'import platform, sys; sys.exit(platform.python_version() != "$(PYTHON_VERSION)")'; then \
+		echo "Reusing venv with Python $(PYTHON_VERSION)"; \
+	else \
+		echo "Creating venv with Python $(PYTHON_VERSION)"; \
+		if [ -d "venv" ]; then rm -rf venv; fi; \
+		python -m venv venv; \
+	fi
 	$(PIP) install -U "pip<26" "setuptools>=82.0.1" "wheel>=0.47.0"
 	$(PIP) install -e .
 
 dev: env
 	$(PIP) install -r requirements-dev.txt
-	$(PIP) install -e '.[dev]'
+	$(PIP) install --no-deps -e .
 
 update:
 	$(PIP) install -U .
@@ -50,12 +57,12 @@ ci-env:
 	else \
 		echo "No valid cached venv found, creating a fresh venv"; \
 		if [ -d "venv" ]; then rm -rf venv; fi; \
-		$(BOOTSTRAP_PYTHON) -m venv venv; \
+		python -m venv venv; \
 		$(PIP) install -U "pip<26" "setuptools>=82.0.1" "wheel>=0.47.0"; \
 	fi
-
 ci-dev-install: ci-env
-	$(PIP) install -e '.[dev]'
+	$(PIP) install -r requirements-dev.txt
+	$(PIP) install --no-deps -e .
 
 flake:
 	$(FLAKE) sdiff tests scripts
