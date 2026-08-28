@@ -8,7 +8,7 @@ COVERAGE=venv/bin/coverage
 PYTEST=venv/bin/pytest
 FLAKE=venv/bin/flake8
 PIP_COMPILE=venv/bin/pip-compile
-RG=rg
+GREP=grep
 SDIFF_MISTUNE_084_ORACLE_REV?=12e7782208e4b458c8c4242882fda2377d9cba6b
 MISTUNE_ORACLE_PYTHON?=$(abspath $(PYTHON))
 MISTUNE_GOLDEN_FIXTURES=tests/fixtures/compatibility/golden_mistune_084_fixtures.json
@@ -69,8 +69,17 @@ flake:
 
 check-msgpack:
 	@echo "Checking for direct msgpack imports..."
-	@! $(RG) -n --glob '*.py' '^(import msgpack|from msgpack)' sdiff tests \
-		|| (echo "ERROR: Unexpected direct msgpack import found." && exit 1)
+	@command -v $(GREP) >/dev/null 2>&1 \
+		|| (echo "ERROR: msgpack import scan failed because $(GREP) is unavailable." && exit 1)
+	@status=0; \
+	$(GREP) -RIn --include='*.py' -E \
+		'^[[:space:]]*(import[[:space:]]+msgpack($$|[[:space:].,])|from[[:space:]]+msgpack($$|[[:space:].]))' \
+		sdiff tests || status=$$?; \
+	case $$status in \
+		0) echo "ERROR: Unexpected direct msgpack import found."; exit 1 ;; \
+		1) ;; \
+		*) echo "ERROR: msgpack import scan failed with exit code $$status."; exit $$status ;; \
+	esac
 
 lint: build-dir flake check-msgpack
 
