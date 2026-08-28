@@ -49,7 +49,7 @@ Python 3.11.9 compatibility lane because that is the patch release available fro
 3. `git tag <version>`
 4. `git push origin <version>`
 5. `make publish`
-6. Go to http://10.10.1.143:8080/#/admin, log in with the admin credentials from BE 1Password, select
+6. Go to http://10.10.1.166:8080/#/admin, log in with the admin credentials from BE 1Password, select
    **Rebuild package list**, and wait for completion.
 7. Go to http://10.10.2.107:8080/#/admin, log in with the admin credentials from BE 1Password, select
    **Rebuild package list**, and wait for completion.
