@@ -1,0 +1,83 @@
+version: 2.1
+
+executors:
+  python311:
+    docker:
+      - image: cimg/python:3.11.13
+
+commands:
+  restore_dependency_caches:
+    steps:
+      - restore_cache:
+          keys:
+            - v4-pip-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-pip-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-pip-{{ arch }}
+            - v4-pip-
+      - restore_cache:
+          keys:
+            - v4-venv-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-venv-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "requirements-dev.txt" }}
+            - v4-venv-{{ arch }}
+            - v4-venv-
+  save_dependency_caches:
+    steps:
+      - save_cache:
+          key: v4-pip-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - ~/.local
+            - ~/.cache
+      - save_cache:
+          key: v4-venv-{{ arch }}-{{ checksum ".python-version" }}-{{ checksum "pyproject.toml" }}-{{ checksum "requirements-dev.txt" }}
+          paths:
+            - /home/circleci/project/venv
+
+jobs:
+  prepare_cache:
+    executor: python311
+    steps:
+      - checkout
+      - restore_dependency_caches
+      - run:
+          name: Install dependencies
+          command: make ci-dev-install
+      - save_dependency_caches
+
+  lint:
+    executor: python311
+    steps:
+      - checkout
+      - restore_dependency_caches
+      - run:
+          name: Run the linter
+          command: make lint
+      - store_test_results:
+          path: build/test
+
+  test:
+    executor: python311
+    steps:
+      - checkout
+      - restore_dependency_caches
+      - run:
+          name: Run unit and golden fixture tests
+          command: make test-only
+      - store_test_results:
+          path: build/test
+      - store_artifacts:
+          path: build/coverage/coverage.xml
+          destination: coverage
+      - run:
+          name: Upload coverage to Codecov
+          command: bash <(curl -s https://codecov.io/bash) -t ${CODECOV_TOKEN} -f build/coverage/coverage.xml || echo "Codecov did not collect coverage reports"
+
+workflows:
+  test:
+    jobs:
+      - prepare_cache
+      - lint:
+          requires:
+            - prepare_cache
+      - test:
+          requires:
+            - prepare_cache
