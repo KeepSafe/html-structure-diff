@@ -1,0 +1,257 @@
+{
+  "block_html_and_comment": {
+    "errors": [],
+    "html": [
+      "<pre>\n<!-- English note -->\n\n<div class=\"notice\">\nEnglish\n</div>\n</pre>",
+      "<pre>\n<!-- Deutsche Notiz -->\n\n<div class=\"notice\">\nDeutsch\n</div>\n</pre>"
+    ],
+    "left_structure": "xx",
+    "link_errors": [],
+    "right_structure": "xx",
+    "text": [
+      "<!-- English note -->\n\n<div class=\"notice\">\nEnglish\n</div>",
+      "<!-- Deutsche Notiz -->\n\n<div class=\"notice\">\nDeutsch\n</div>"
+    ]
+  },
+  "extra_paragraph": {
+    "errors": [
+      {
+        "message": "There is a missing element `paragraph`.",
+        "style": "ins",
+        "symbol": "p",
+        "type": "InsertError"
+      },
+      {
+        "message": "There is a missing element `text`.",
+        "style": "ins",
+        "symbol": "t",
+        "type": "InsertError"
+      }
+    ],
+    "html": [
+      "<pre>\none\n</pre>",
+      "<pre>\neins\n\n<ins><ins>zwei</ins>\n\n</ins>\n</pre>"
+    ],
+    "left_structure": "pt",
+    "link_errors": [
+      {
+        "message": "There is a missing element `paragraph`.",
+        "style": "ins",
+        "symbol": "p",
+        "type": "InsertError"
+      }
+    ],
+    "right_structure": "ptpt",
+    "text": [
+      "one",
+      "eins\n\nzwei"
+    ]
+  },
+  "hard_break_and_direction_marks": {
+    "errors": [],
+    "html": [
+      "<pre>\none  \u00b6\ntwo\n\nthree\n</pre>",
+      "<pre>\neins  \u00b6\nzwei\n\ndrei\n</pre>"
+    ],
+    "left_structure": "ptntpt",
+    "link_errors": [],
+    "right_structure": "ptntpt",
+    "text": [
+      "one  \u00b6\ntwo\n\nthree",
+      "eins  \u00b6\nzwei\n\ndrei"
+    ]
+  },
+  "heading_styles": {
+    "errors": [],
+    "html": [
+      "<pre>\n#Heading\n\n##Setext heading\n</pre>",
+      "<pre>\n#Ueberschrift\n\n##Setext Ueberschrift\n</pre>"
+    ],
+    "left_structure": "1t2t",
+    "link_errors": [],
+    "right_structure": "1t2t",
+    "text": [
+      "#Heading\n\n##Setext heading",
+      "#Ueberschrift\n\n##Setext Ueberschrift"
+    ]
+  },
+  "image_and_reference_link": {
+    "errors": [],
+    "html": [
+      "<pre>\n![English alt](image.png)\n\nRead [the guide][docs].\n\n[docs]: https://example.test/docs\n</pre>",
+      "<pre>\n![Deutscher Alt-Text](image.png)\n\nLies [die Anleitung][docs].\n\n[docs]: https://example.test/docs\n</pre>"
+    ],
+    "left_structure": "piptatpt",
+    "link_errors": [],
+    "right_structure": "piptatpt",
+    "text": [
+      "![English alt](image.png)\n\nRead [the guide][docs].\n\n[docs]: https://example.test/docs",
+      "![Deutscher Alt-Text](image.png)\n\nLies [die Anleitung][docs].\n\n[docs]: https://example.test/docs"
+    ]
+  },
+  "inline_html": {
+    "errors": [],
+    "html": [
+      "<pre>\nbefore &lt;sub&gt;one&lt;/sub&gt; after\n</pre>",
+      "<pre>\nvor &lt;sub&gt;eins&lt;/sub&gt; danach\n</pre>"
+    ],
+    "left_structure": "pt",
+    "link_errors": [],
+    "right_structure": "pt",
+    "text": [
+      "before &lt;sub&gt;one&lt;/sub&gt; after",
+      "vor &lt;sub&gt;eins&lt;/sub&gt; danach"
+    ]
+  },
+  "link_count_change": {
+    "errors": [],
+    "html": [
+      "<pre>\nRead [one](https://example.test/one).\n</pre>",
+      "<pre>\nLies [eins](https://example.test/one) und [zwei](https://example.test/two).\n</pre>"
+    ],
+    "left_structure": "ptat",
+    "link_errors": [
+      {
+        "message": "There is a missing element `link`.",
+        "style": "ins",
+        "symbol": "a",
+        "type": "InsertError"
+      }
+    ],
+    "right_structure": "ptatat",
+    "text": [
+      "Read [one](https://example.test/one).",
+      "Lies [eins](https://example.test/one) und [zwei](https://example.test/two)."
+    ]
+  },
+  "list_variants": {
+    "errors": [],
+    "html": [
+      "<pre>\n* one\n* two\n\n\n0. first\n1. second\n</pre>",
+      "<pre>\n* eins\n* zwei\n\n\n0. erste\n1. zweite\n</pre>"
+    ],
+    "left_structure": "lmtmtlmtmt",
+    "link_errors": [],
+    "right_structure": "lmtmtlmtmt",
+    "text": [
+      "* one\n* two\n\n\n0. first\n1. second",
+      "* eins\n* zwei\n\n\n0. erste\n1. zweite"
+    ]
+  },
+  "removed_paragraph": {
+    "errors": [
+      {
+        "message": "There is an additional element `paragraph`.",
+        "style": "del",
+        "symbol": "p",
+        "type": "DeleteError"
+      },
+      {
+        "message": "There is an additional element `text`.",
+        "style": "del",
+        "symbol": "t",
+        "type": "DeleteError"
+      }
+    ],
+    "html": [
+      "<pre>\none\n\n<del><del>two</del>\n\n</del>\n</pre>",
+      "<pre>\neins\n</pre>"
+    ],
+    "left_structure": "ptpt",
+    "link_errors": [
+      {
+        "message": "There is an additional element `paragraph`.",
+        "style": "del",
+        "symbol": "p",
+        "type": "DeleteError"
+      }
+    ],
+    "right_structure": "pt",
+    "text": [
+      "one\n\ntwo",
+      "eins"
+    ]
+  },
+  "same_links": {
+    "errors": [],
+    "html": [
+      "<pre>\nA [link](https://example.test)\n</pre>",
+      "<pre>\nB [translated](https://example.test)\n</pre>"
+    ],
+    "left_structure": "pta",
+    "link_errors": [],
+    "right_structure": "pta",
+    "text": [
+      "A [link](https://example.test)",
+      "B [translated](https://example.test)"
+    ]
+  },
+  "zendesk_callout_style": {
+    "errors": [
+      {
+        "message": "There is an additional element `callout`.",
+        "style": "del",
+        "symbol": "C",
+        "type": "DeleteError"
+      },
+      {
+        "message": "There is a missing element `callout`.",
+        "style": "ins",
+        "symbol": "C",
+        "type": "InsertError"
+      }
+    ],
+    "html": [
+      "<pre>\n<del><callout red>\n\n#Title\n\nbody\n\n</callout>\n</del>\n</pre>",
+      "<pre>\n<ins><callout green>\n\n#Titel\n\ninhalt\n\n</callout>\n</ins>\n</pre>"
+    ],
+    "left_structure": "C1tpt",
+    "link_errors": [
+      {
+        "message": "There is an additional element `callout`.",
+        "style": "del",
+        "symbol": "C",
+        "type": "DeleteError"
+      },
+      {
+        "message": "There is a missing element `callout`.",
+        "style": "ins",
+        "symbol": "C",
+        "type": "InsertError"
+      }
+    ],
+    "right_structure": "C1tpt",
+    "text": [
+      "<callout red>\n\n#Title\n\nbody\n\n</callout>",
+      "<callout green>\n\n#Titel\n\ninhalt\n\n</callout>"
+    ]
+  },
+  "zendesk_steps_in_tabs": {
+    "errors": [],
+    "html": [
+      "<pre>\n<tabs>\n\n#Steps\n\n<steps>\n\n0. one\n1. two\n\n\n</steps>\n</tabs>\n</pre>",
+      "<pre>\n<tabs>\n\n#Schritte\n\n<steps>\n\n0. eins\n1. zwei\n\n\n</steps>\n</tabs>\n</pre>"
+    ],
+    "left_structure": "T1tSlmtmt",
+    "link_errors": [],
+    "right_structure": "T1tSlmtmt",
+    "text": [
+      "<tabs>\n\n#Steps\n\n<steps>\n\n0. one\n1. two\n\n\n</steps>\n</tabs>",
+      "<tabs>\n\n#Schritte\n\n<steps>\n\n0. eins\n1. zwei\n\n\n</steps>\n</tabs>"
+    ]
+  },
+  "zendesk_unstyled_callout_in_tabs": {
+    "errors": [],
+    "html": [
+      "<pre>\n<tabs>\n\n#Topic\n\n<callout>\n\nbody\n\n</callout>\n</tabs>\n</pre>",
+      "<pre>\n<tabs>\n\n#Thema\n\n<callout>\n\ninhalt\n\n</callout>\n</tabs>\n</pre>"
+    ],
+    "left_structure": "T1tCpt",
+    "link_errors": [],
+    "right_structure": "T1tCpt",
+    "text": [
+      "<tabs>\n\n#Topic\n\n<callout>\n\nbody\n\n</callout>\n</tabs>",
+      "<tabs>\n\n#Thema\n\n<callout>\n\ninhalt\n\n</callout>\n</tabs>"
+    ]
+  }
+}

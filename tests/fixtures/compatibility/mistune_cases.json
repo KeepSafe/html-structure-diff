@@ -1,0 +1,513 @@
+{
+  "fuzz_seed": 311084334,
+  "fuzz_cases": 1000,
+  "cases": [
+    {
+      "name": "empty",
+      "parser": "MdParser",
+      "left": ""
+    },
+    {
+      "name": "plain_and_entities",
+      "parser": "MdParser",
+      "left": "a & b &amp; &copy; &bogus; < > \"quoted\""
+    },
+    {
+      "name": "atx_headings",
+      "parser": "MdParser",
+      "left": "# heading\n\n###heading\n\n###### six\n\n####### seven"
+    },
+    {
+      "name": "setext_and_thematic_break",
+      "parser": "MdParser",
+      "left": "heading\n===\n\nsubheading\n---\n\n---\n\n***"
+    },
+    {
+      "name": "unicode_heading_space",
+      "parser": "MdParser",
+      "left": "#\u2003heading\n\n#\theading"
+    },
+    {
+      "name": "inline_syntax_stays_text",
+      "parser": "MdParser",
+      "left": "*em* **strong** ~~strike~~ `code` \\*escaped*"
+    },
+    {
+      "name": "block_syntax_stays_text",
+      "parser": "MdParser",
+      "left": "> quote\n\n```python\nprint('x')\n```\n\n    indented"
+    },
+    {
+      "name": "inline_html_is_escaped",
+      "parser": "MdParser",
+      "left": "before <sub class=\"x\">one</sub> after"
+    },
+    {
+      "name": "block_html_and_comment",
+      "parser": "MdParser",
+      "left": "<!-- note -->\n\n<div class=\"notice\">\nbody\n</div>\n\n<hr>"
+    },
+    {
+      "name": "block_html_template_attributes",
+      "parser": "MdParser",
+      "left": "<div class=\"{{ class_name }}\" data-x='{{value}}'>\n{{ body }}\n</div>"
+    },
+    {
+      "name": "links_and_images",
+      "parser": "MdParser",
+      "left": "[label](https://example.test/a_(b) \"title\") ![alt](image.png 'title')"
+    },
+    {
+      "name": "reference_links",
+      "parser": "MdParser",
+      "left": "[resolved][docs] [collapsed][] [shortcut]\n\n[docs]: https://example.test/docs\n[collapsed]: /local"
+    },
+    {
+      "name": "nested_and_escaped_links",
+      "parser": "MdParser",
+      "left": "[outer [inner]](url) [escaped \\] label](url) ![a [b]](img)"
+    },
+    {
+      "name": "malformed_links",
+      "parser": "MdParser",
+      "left": "[open]( [missing](url ![image]( [label] (url)"
+    },
+    {
+      "name": "hard_soft_and_blank_lines",
+      "parser": "MdParser",
+      "left": "one  \ntwo\nthree\n\n\n\nfour\n \nfive"
+    },
+    {
+      "name": "direction_marks_and_line_endings",
+      "parser": "MdParser",
+      "left": "\u200eone\r\ntwo\u200f\r\n"
+    },
+    {
+      "name": "unordered_lists",
+      "parser": "MdParser",
+      "left": "* one\n- two\n+ three\n\n* loose one\n\n  continuation\n\n* loose two"
+    },
+    {
+      "name": "ordered_and_nested_lists",
+      "parser": "MdParser",
+      "left": "1. first\n2. second\n   * nested\n   * nested two\n3. third"
+    },
+    {
+      "name": "headings_in_lists",
+      "parser": "MdParser",
+      "left": "1. ###header\n2. setext\n   ---\n3. text"
+    },
+    {
+      "name": "zendesk_callouts",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<callout>\n# Title\nbody\n</callout>\n\n<callout red>red</callout>\n\n<callout invalid>bad</callout>"
+    },
+    {
+      "name": "zendesk_nested",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<tabs>\n# Topic\n<steps>\n1. one\n2. two\n</steps>\n<callout green>\nbody\n</callout>\n</tabs>"
+    },
+    {
+      "name": "zendesk_invalid_closing",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<steps>\n1. one\n</step>\n\n<tabs>one</tab>"
+    },
+    {
+      "name": "leading_and_trailing_blank_lines",
+      "parser": "MdParser",
+      "left": "\n\nleading\n\n\n\ntrailing\n\n"
+    },
+    {
+      "name": "whitespace_only",
+      "parser": "MdParser",
+      "left": " \n\t\n   \n"
+    },
+    {
+      "name": "closing_and_excess_heading_markers",
+      "parser": "MdParser",
+      "left": "### heading ###\n\n####### heading\n\n       # deeply indented"
+    },
+    {
+      "name": "setext_equals_and_underscores",
+      "parser": "MdParser",
+      "left": "level one\n===\n\n___\n\n***"
+    },
+    {
+      "name": "literal_table",
+      "parser": "MdParser",
+      "left": "| a | b |\n|---|---|\n| c | d |"
+    },
+    {
+      "name": "html_empty_and_self_closing",
+      "parser": "MdParser",
+      "left": "<div></div>\n\n<hr>\n\n<hr/>\n\n<custom />"
+    },
+    {
+      "name": "html_mismatched_case_and_attributes",
+      "parser": "MdParser",
+      "left": "<DIV data-id=one disabled>\nbody\n</DIV>\n\n<div data-x=\"one two\">body</DIV>"
+    },
+    {
+      "name": "html_inline_comment",
+      "parser": "MdParser",
+      "left": "before <!-- note --> after"
+    },
+    {
+      "name": "link_destination_forms",
+      "parser": "MdParser",
+      "left": "[plain](path) [angle](<https://example.test/a>) [percent](a%20b) [empty]()"
+    },
+    {
+      "name": "link_title_forms",
+      "parser": "MdParser",
+      "left": "[double](url \"title\") [single](url 'title') [parenthesized](url (title)) [angle](<url> \"title\")"
+    },
+    {
+      "name": "link_titles_with_closing_parentheses",
+      "parser": "MdParser",
+      "left": "[double](a \"x)\") [single](a 'x)')"
+    },
+    {
+      "name": "image_titles_with_closing_parentheses",
+      "parser": "MdParser",
+      "left": "![double](a \"x)\") ![single](a 'x)')"
+    },
+    {
+      "name": "link_title_angle_and_fallback_boundaries",
+      "parser": "MdParser",
+      "left": "[fallback](< \")\") [angle](<u> \"x)\")"
+    },
+    {
+      "name": "link_multiline_destination",
+      "parser": "MdParser",
+      "left": "[label](https://example.test/\npath)"
+    },
+    {
+      "name": "link_backticks_and_nested_labels",
+      "parser": "MdParser",
+      "left": "[a `b`](url) [outer [inner]](url)"
+    },
+    {
+      "name": "link_deep_and_unbalanced_labels",
+      "parser": "MdParser",
+      "left": "[[[label]]](url) [[label](url)"
+    },
+    {
+      "name": "legacy_nested_label_atom",
+      "parser": "MdParser",
+      "left": "[[[]](u) ![[[]](u) [[[]][r] ![[[]][r]"
+    },
+    {
+      "name": "greedy_label_closing_boundary",
+      "parser": "MdParser",
+      "left": "[a](u) x ](v)\n\n[a](u)](v)"
+    },
+    {
+      "name": "link_angle_fallback_boundaries",
+      "parser": "MdParser",
+      "left": "[missing-close-angle](<url) [close-after-parenthesis](<url)>)"
+    },
+    {
+      "name": "link_unmatched_closing_boundaries",
+      "parser": "MdParser",
+      "left": "[a]b](u) [a]](u) [[a]](u) [[[a]]](u)"
+    },
+    {
+      "name": "mixed_direct_reference_precedence",
+      "parser": "MdParser",
+      "left": "[a][ref](u) [a](u)[ref] [[a][ref]](u) [a] [ref](u)"
+    },
+    {
+      "name": "reference_link_forms",
+      "parser": "MdParser",
+      "left": "[full][label] [empty][] [space]  [label] ![image][missing] [shortcut]"
+    },
+    {
+      "name": "autolinks_and_bare_urls_are_text",
+      "parser": "MdParser",
+      "left": "<https://example.test> https://example.test person@example.test"
+    },
+    {
+      "name": "empty_and_unclosed_images",
+      "parser": "MdParser",
+      "left": "![]() ![alt](url ![alt][missing]"
+    },
+    {
+      "name": "ordered_list_nonstandard_starts",
+      "parser": "MdParser",
+      "left": "text\n2. two\n\n7. seven\n8. eight\n\n12345678901. large"
+    },
+    {
+      "name": "parenthesized_list_marker_is_text",
+      "parser": "MdParser",
+      "left": "1) one\n2) two"
+    },
+    {
+      "name": "mixed_list_boundaries",
+      "parser": "MdParser",
+      "left": "* star\n- dash\n+ plus\n\n1. ordered\n* unordered"
+    },
+    {
+      "name": "list_with_hard_break_and_html",
+      "parser": "MdParser",
+      "left": "* one  \n  continued\n* <div>\n  body\n  </div>"
+    },
+    {
+      "name": "list_thematic_break_exception",
+      "parser": "MdParser",
+      "left": "* one\n\n  ---\n* two"
+    },
+    {
+      "name": "zendesk_callout_all_styles",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<callout green>green</callout>\n\n<callout red>red</callout>\n\n<callout yellow>yellow</callout>"
+    },
+    {
+      "name": "zendesk_uppercase_and_multiple_styles",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<CALLOUT>upper</CALLOUT>\n\n<callout red green>multiple</callout>"
+    },
+    {
+      "name": "zendesk_empty_and_trailing_content",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<tabs></tabs>\n\n<steps>one</steps> trailing"
+    },
+    {
+      "name": "zendesk_same_tag_nesting",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<tabs>\n<tabs>inner</tabs>\n</tabs>"
+    },
+    {
+      "name": "zendesk_sibling_custom_tags",
+      "parser": "ZendeskHelpMdParser",
+      "left": "<steps>1. one</steps>\n\n<callout red>warning</callout>"
+    },
+    {
+      "name": "deep_unmatched_link_openers",
+      "parser": "MdParser",
+      "left": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[x](url)"
+    },
+    {
+      "name": "inline_rule_selection",
+      "scenario": "inline_rule_selection",
+      "operations": [
+        {
+          "name": "text_only_direct",
+          "source": "[x](url)",
+          "rules": ["text"]
+        },
+        {
+          "name": "text_only_reference_call",
+          "source": "[x][ref]",
+          "rules": ["text"],
+          "call": true
+        },
+        {
+          "name": "direct_rule",
+          "source": "[x](url)",
+          "rules": ["link", "text"]
+        },
+        {
+          "name": "reference_rule",
+          "source": "[x][ref]",
+          "rules": ["reflink", "text"]
+        },
+        {
+          "name": "autolink_rule",
+          "source": "<https://example.test>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "email_autolink_rule",
+          "source": "<person@example.test>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "url_rule",
+          "source": "https://example.test/path",
+          "rules": ["url", "text"]
+        },
+        {
+          "name": "url_trailing_punctuation",
+          "source": "https://example.test/path).",
+          "rules": ["url", "text"]
+        },
+        {
+          "name": "sequential_autolinks",
+          "source": "<a:b><c:d>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "text_precedes_autolink",
+          "source": "<https://example.test>",
+          "rules": ["text", "autolink"]
+        },
+        {
+          "name": "text_precedes_url",
+          "source": "https://example.test",
+          "rules": ["text", "url"]
+        },
+        {
+          "name": "prefixed_autolink_remains_text",
+          "source": "before <a:b>",
+          "rules": ["autolink", "text"]
+        },
+        {
+          "name": "prefixed_url_remains_text",
+          "source": "before https://example.test",
+          "rules": ["url", "text"]
+        },
+        {
+          "name": "empty_rules_use_defaults",
+          "source": "[x](url)",
+          "rules": []
+        },
+        {
+          "name": "none_uses_defaults",
+          "source": "[x][ref]"
+        }
+      ]
+    },
+    {
+      "name": "block_rule_selection",
+      "scenario": "block_rule_selection",
+      "parser": "MdParser",
+      "operations": [
+        {
+          "name": "text_only_heading",
+          "source": "# heading",
+          "rules": ["text"]
+        },
+        {
+          "name": "heading_then_text",
+          "source": "# heading",
+          "rules": ["heading", "text"],
+          "call": true
+        },
+        {
+          "name": "block_quote",
+          "source": "> quote",
+          "rules": ["block_quote", "text"]
+        },
+        {
+          "name": "nested_block_quote",
+          "source": "> > deep",
+          "rules": ["block_quote", "text"]
+        },
+        {
+          "name": "block_quote_recursion_limit",
+          "source": "> quote",
+          "rules": ["block_quote", "text"],
+          "blockquote_depth": 6
+        },
+        {
+          "name": "fenced_code",
+          "source": "```python\nprint(1)\n```",
+          "rules": ["fences", "text"]
+        },
+        {
+          "name": "indented_code",
+          "source": "    code\n",
+          "rules": ["block_code", "text"]
+        },
+        {
+          "name": "pipe_table",
+          "source": "| a | b | c | d |\n|---|:---|---:|:---:|\n| w | x | y | z |\n",
+          "rules": ["table", "text"]
+        },
+        {
+          "name": "no_leading_pipe_table",
+          "source": "a | b\n---|:---:\nc | d\n",
+          "rules": ["nptable", "text"]
+        },
+        {
+          "name": "definition_link",
+          "source": "[Docs]: <https://example.test> \"Title\"\n",
+          "rules": ["def_links", "text"]
+        },
+        {
+          "name": "duplicate_definition_link",
+          "source": "[Docs]: /one\n[docs]: /two\n",
+          "rules": ["def_links", "text"]
+        },
+        {
+          "name": "definition_footnote",
+          "source": "[^Note]: body\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "multiline_definition_footnote",
+          "source": "[^n]: first\n    second\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "fenced_definition_footnote",
+          "source": "[^code]:\n    ```python\n    print(1)\n    ```\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "table_definition_footnote",
+          "source": "[^table]:\n    | a | b |\n    |---|:---:|\n    | c | d |\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "quote_definition_footnote",
+          "source": "[^quote]:\n    > quote\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "duplicate_definition_footnote",
+          "source": "[^n]: one\n[^N]: two\n",
+          "rules": ["def_footnotes", "text"]
+        },
+        {
+          "name": "mutated_default_rules",
+          "source": "# heading",
+          "default_rules": ["text"]
+        },
+        {
+          "name": "empty_rules_use_defaults",
+          "source": "# heading",
+          "rules": []
+        }
+      ]
+    },
+    {
+      "name": "block_parser_reuse",
+      "scenario": "reuse_block_parser",
+      "parser": "MdParser",
+      "left": "# first",
+      "right": "second"
+    },
+    {
+      "name": "inline_parser_reuse",
+      "scenario": "reuse_inline_parser",
+      "parser": "MdParser",
+      "left": "first [one](url)",
+      "right": "second [two][ref]"
+    },
+    {
+      "name": "preprocessing_boundary",
+      "scenario": "preprocessing_boundary",
+      "parser": "MdParser",
+      "left": "\u200eone  \n\u200ftwo\n   \nthree"
+    },
+    {
+      "name": "exhaustive_link_label_matrix",
+      "scenario": "link_label_matrix"
+    },
+    {
+      "name": "exhaustive_link_tail_matrix",
+      "scenario": "link_tail_matrix"
+    },
+    {
+      "name": "explicit_inline_rule_matrix",
+      "scenario": "inline_rule_matrix"
+    },
+    {
+      "name": "explicit_block_rule_matrix",
+      "scenario": "block_rule_matrix",
+      "parser": "MdParser"
+    }
+  ]
+}

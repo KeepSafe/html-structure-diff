@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=82.0.1", "wheel>=0.47.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdiff"
+version = "2.0.0"
+description = "Compare Markdown documents by structure while ignoring translated content"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = "Apache-2.0"
+authors = [
+    { name = "Keepsafe", email = "support@getkeepsafe.com" },
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "mistune==3.3.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build==1.5.0",
+    "coverage==7.6.1",
+    "flake8==7.1.1",
+    "flake8-pyproject==1.2.4",
+    "pip-tools==7.5.3",
+    "pytest==9.1.1",
+    "twine==6.2.0",
+]
+tests = [
+    "coverage==7.6.1",
+    "flake8==7.1.1",
+    "flake8-pyproject==1.2.4",
+    "pytest==9.1.1",
+]
+devtools = [
+    "build==1.5.0",
+    "twine==6.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/KeepSafe/html-structure-diff/"
+
+[tool.setuptools.packages.find]
+include = ["sdiff*"]
+exclude = ["tests*"]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["F403", "F405"]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+fail_under = 96
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

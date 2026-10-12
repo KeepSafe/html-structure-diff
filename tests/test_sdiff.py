@@ -1,18 +1,16 @@
+from pathlib import Path
 from unittest import TestCase
 
-import os
 import sdiff
-from pathlib import Path
-
 from sdiff import ZendeskHelpMdParser
 
 
 def _load_fixture(*path):
-    return open(os.path.join('tests/fixtures', *path)).read()
+    return Path('tests/fixtures', *path).read_text(encoding='utf-8')
 
 
 def _read_test_files(dirpath):
-    path = Path(os.path.join('tests/fixtures', dirpath))
+    path = Path('tests/fixtures', dirpath)
     filenames = {f.name.split('.')[0] for f in path.glob('*.md')}
     return [('%s.en.md' % fn, '%s.de.md' % fn) for fn in filenames]
 

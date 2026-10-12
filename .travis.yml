@@ -1,11 +1,15 @@
 language: python
 dist: jammy
 python:
-  - "3.11"
+  - 3.11.9
 # command to install dependencies
 install:
-  - make dev
+  - python -m venv venv
+  - venv/bin/pip install -U "pip<26" "setuptools>=82.0.1" "wheel>=0.47.0"
+  - venv/bin/pip install -r requirements-dev.txt
+  - venv/bin/pip install --no-deps -e .
 # command to run tests
 script:
+  - venv/bin/python -VV
   - make test
   - make coverage

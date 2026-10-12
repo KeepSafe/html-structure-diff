@@ -138,7 +138,7 @@ class List(Node):
         result = ''
         for idx, node in enumerate(self.nodes):
             if self.ordered:
-                result += '{}. {}'.format(idx, node.original(renderer))
+                result += f'{idx}. {node.original(renderer)}'
             else:
                 result += '* ' + node.original(renderer)
         result = result + '\n\n'
